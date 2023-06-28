@@ -106,6 +106,13 @@ func TestScanCode(t *testing.T) {
 	t.Run("simple fraction 2", run("1.(3)", "1.(3) ", tokens.FRACTION))
 	t.Run("simple fraction 3", run("-1.(53)", "-1.(53) ", tokens.FRACTION))
 
+	t.Run("simple char 1", run("'a'", "'a' ", tokens.CHAR))
+	t.Run("simple char 2", run("'*'", "'*' ", tokens.CHAR))
+	t.Run("simple char 3", run("'0'", "'0' ", tokens.CHAR))
+	t.Run("simple escape char", run(`'\n'`, `'\n' `, tokens.CHAR))
+	t.Run("value escape char", run(`'\0'`, `'' `, tokens.CHAR))
+	t.Run("complex escape char", run(`'\u{0x1f984}'`, `'🦄' `, tokens.CHAR))
+
 	t.Run("simple literals value", func(t *testing.T) {
 		code := `18; "coucou" 42.1(8); -0b01; +0xA4`
 		got := ScanCode(code).String()
