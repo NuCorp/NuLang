@@ -108,10 +108,15 @@ type Fraction = utils.Fraction
 
 func fraction(token TokenInfo, floatPower uint, input <-chan scannerInput, output chan<- TokenInfo) {
 	var fixFloat float64
+	sign := false
 	if tokenValue, ok := token.Value().(float64); !strings.HasSuffix(token.rawValue, "(") || !ok || token.Token() != tokens.FLOAT {
 		panic("fraction should be call only inside number, when input.r == '(' and with float value")
 	} else {
 		fixFloat = tokenValue
+		if fixFloat < 0 {
+			sign = true
+			fixFloat *= -1
+		}
 	}
 	repeatValue := int64(0)
 	repeatPower := uint(1)
@@ -125,15 +130,19 @@ func fraction(token TokenInfo, floatPower uint, input <-chan scannerInput, outpu
 			return
 		}
 		floatFraction := Fraction{Num: int64(fixFloat * float64(floatPower)), Denum: floatPower}
-		repeatFraction := Fraction{Num: repeatValue, Denum: (floatPower - 1) * repeatPower}
+		repeatFraction := Fraction{Num: repeatValue, Denum: (floatPower * repeatPower) - 1*floatPower}
 		token.token = tokens.FRACTION
 		token.value = floatFraction.Add(repeatFraction)
+		if sign {
+			token.value = token.value.(Fraction).Neg()
+		}
 		output <- token
 		close(output)
 	}()
 
 	for input := range input {
 		if input.r == ')' {
+			token.rawValue += ")"
 			return // success if !rawValue.HasPrefix("()")
 		}
 		if !container.Contains(getBaseDigitRepresentation(10), input.r) {

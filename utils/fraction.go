@@ -44,37 +44,44 @@ func (frac Fraction) String() string {
 		sign = "-"
 		frac.Num *= -1
 	}
-	rests := container.OrderedMap[uint, uint]{}
+	type pair = [2]uint
+	rests := []pair{}
 	num := uint(frac.Num)
 
 	fix := fmt.Sprint(num / frac.Denum)
 	fixFloat := ""
 	repeat := ""
+
+	reachingFloatingPoint := false
 	for {
 		quotient := num / frac.Denum
 		rest := num % frac.Denum
 		if rest == 0 {
 			break
 		}
-		if _, found := rests.TryGet(rest); found {
+		couple := pair{quotient, rest}
+		if container.Contains(rests, couple) {
 			passed := false
-			for _, key := range rests.Keys() {
-				value := rests.Get(key)
-				if key == rest {
+			for _, pair := range rests {
+				if pair == couple {
 					passed = true
 				}
 				if passed {
-					repeat += fmt.Sprint(value)
+					repeat += fmt.Sprint(pair[0])
 				} else {
-					fixFloat += fmt.Sprint(value)
+					fixFloat += fmt.Sprint(pair[0])
 				}
 			}
 			break
 		}
-		rests.Set(rest, quotient)
+		rests = append(rests, couple)
 		num = rest
 		if num < frac.Denum {
 			num *= 10
+			if !reachingFloatingPoint {
+				rests = []pair{}
+				reachingFloatingPoint = true
+			}
 		}
 	}
 
