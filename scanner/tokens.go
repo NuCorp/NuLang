@@ -22,6 +22,8 @@ type TokenInfo struct {
 	from, to TokenPos
 
 	value any // tokens.IsLiteral() <=> value != nil
+
+	errorRef int
 }
 
 func (t TokenInfo) Token() tokens.Token { return t.token }
@@ -44,4 +46,11 @@ func (code CodeToken) String() string {
 		str += tok.String() + " "
 	}
 	return str
+}
+func (code CodeToken) TokenList() []tokens.Token {
+	toks := make([]tokens.Token, 0, len(code))
+	for _, tokenInfo := range code {
+		toks = append(toks, tokenInfo.Token())
+	}
+	return toks
 }
