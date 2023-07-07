@@ -3,7 +3,6 @@ package scanner
 import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils"
 	"strings"
 	"unicode"
 )
@@ -11,6 +10,13 @@ import (
 type scannerInput struct {
 	pos TokenPos
 	r   rune
+}
+
+type outputChan[T any] chan<- T
+
+func (output outputChan[T]) Continue() {
+	var t T
+	output <- t
 }
 
 func ScanCode(code string) CodeToken {
@@ -57,13 +63,19 @@ func runner(input <-chan scannerInput, output chan<- CodeToken) {
 func runScannerRunnerFrom(input scannerInput) (runnerInput chan scannerInput, runnerOutput chan TokenInfo) {
 	runnerInput = make(chan scannerInput)
 	runnerOutput = make(chan TokenInfo)
-	go number(runnerInput, runnerOutput)
+	var runner func(<-chan scannerInput, chan<- TokenInfo)
+	runner = char
+	if unicode.IsDigit(input.r) {
+		runner = number
+	}
+
+	go runner(runnerInput, runnerOutput)
 	return
 }
 
 func words(input chan<- scannerInput, output <-chan TokenInfo) {}
 
-func getBaseFromIdentifierRune(r rune) (base int) {
+func getBaseFromIdentifierRune(r rune) (base uint) {
 	switch r {
 	case 'b':
 		base = 2
@@ -77,34 +89,32 @@ func getBaseFromIdentifierRune(r rune) (base int) {
 	return base
 }
 
-func getBaseDigitRepresentation(base int) []rune {
+func getBaseDigitRepresentation(base uint) []rune {
 	digitRepresentation := []rune{}
-	for i := 0; i < base && i < 10; i++ {
+	for i := uint(0); i < base && i < 10; i++ {
 		digitRepresentation = append(digitRepresentation, rune(i)+'0')
 	}
 	if base == 16 {
-		for i := 10; i < base; i++ {
+		for i := uint(10); i < base; i++ {
 			offset := rune(i - 10)
 			digitRepresentation = append(digitRepresentation, 'A'+offset, 'a'+offset)
 		}
 	}
 	return digitRepresentation
 }
-func getValueForDigitRepresentation(r rune) int {
+func getValueForDigitRepresentation(r rune) uint {
 	if unicode.IsDigit(r) {
-		return int(r - '0')
+		return uint(r - '0')
 	}
 	if r >= 'a' && r <= 'f' {
-		return int(r - 'a' + 10)
+		return uint(r - 'a' + 10)
 	}
 	if r >= 'A' && r <= 'F' {
-		return int(r - 'A' + 10)
+		return uint(r - 'A' + 10)
 	}
 
 	panic("invalid rune")
 }
-
-type Fraction = utils.Fraction
 
 func fraction(token TokenInfo, floatPower uint, input <-chan scannerInput, output chan<- TokenInfo) {
 	var fixFloat float64
@@ -161,8 +171,8 @@ func fraction(token TokenInfo, floatPower uint, input <-chan scannerInput, outpu
 }
 
 func number(input <-chan scannerInput, output chan<- TokenInfo) {
-	base := 10
-	integer := 0
+	base := uint(10)
+	integer := uint(0)
 
 	floatingPointPower := uint(0)
 
@@ -170,12 +180,8 @@ func number(input <-chan scannerInput, output chan<- TokenInfo) {
 
 	token := TokenInfo{}
 	token.from = InvalidTokenPos()
-	signed := false
 	defer func() {
 		token.token = tokens.INT
-		if signed {
-			integer = -integer
-		}
 		token.value = integer
 		if floatingPointPower != 0 {
 			token.token = tokens.FLOAT
@@ -197,11 +203,6 @@ func number(input <-chan scannerInput, output chan<- TokenInfo) {
 			token.from = input.pos
 		}
 		token.to = input.pos
-		if (input.r == '-' || input.r == '+') && len(token.rawValue) == 1 {
-			signed = input.r == '-'
-			output <- TokenInfo{}
-			continue
-		}
 
 		if input.r == '(' && floatingPointPower != 0 {
 			toFraction = true
@@ -219,6 +220,7 @@ func number(input <-chan scannerInput, output chan<- TokenInfo) {
 		} else if input.r == '.' && floatingPointPower == 0 && base == 10 {
 			floatingPointPower = 1
 		} else {
+			token.token = tokens.ERR
 			// go errors.PushError(...),
 			return
 		}
@@ -226,6 +228,116 @@ func number(input <-chan scannerInput, output chan<- TokenInfo) {
 	}
 }
 
+func integers(input <-chan rune, output outputChan[*Int]) {
+	base := uint(10)
+	var integer *Int
+	for input := range input {
+		if input == '0' && integer == nil { // if
+			integer = new(Int)
+			*integer = 0
+			output.Continue()
+			continue
+		}
+		if input == 'x' || input == 'o' || input == 'b' && base == 10 && integer != nil && *integer == 0 {
+			base = getBaseFromIdentifierRune(input)
+			output.Continue()
+			continue
+		}
+		if container.Contains(getBaseDigitRepresentation(base), input) {
+			if integer == nil { // if base is still 10
+				integer = new(Int)
+				*integer = 0 // unless but who knows
+			}
+			*integer *= base
+			*integer += getValueForDigitRepresentation(input)
+			output.Continue()
+			continue
+		}
+		// none of the case above -> end of the integer
+		output <- integer
+		return
+	}
+}
+
 func str(input chan<- scannerInput, output <-chan TokenInfo) {}
 
-func char(input chan<- scannerInput, output <-chan TokenInfo) {}
+func char(input <-chan scannerInput, outputCh chan<- TokenInfo) {
+	output := outputChan[TokenInfo](outputCh)
+	data := <-input
+	if data.r != '\'' {
+		output <- TokenInfo{token: tokens.ERR}
+	}
+	token := TokenInfo{from: data.pos, rawValue: "'"}
+	output.Continue()
+
+	if data = <-input; data.r == '\\' { // escape seq
+		token.rawValue += "\\"
+		output.Continue()
+
+		data = <-input
+		token.to = data.pos
+		token.rawValue += string(data.r)
+		if escape, found := getSimpleEscapeChar(data.r); found {
+			token.value = escape
+			output.Continue()
+		} else {
+			switch data.r {
+			case '\'':
+				token.value = '\''
+				output.Continue()
+			case 'u', 'U': // todo: unicode value (on 4 bytes (uint[32]))
+
+			// todo for nu-1.1.0: case '[' => custom escaped char from config file in project and config file of computer
+			default:
+				if unicode.IsDigit(data.r) {
+					integerInput := make(chan rune)
+					integerOutput := make(chan *Int)
+					go integers(integerInput, integerOutput)
+					integerInput <- data.r
+					<-integerOutput
+					for data = range input {
+						integerInput <- data.r
+						if result := <-integerOutput; result != nil {
+
+						}
+					}
+				}
+			}
+		}
+	}
+	if data = <-input; data.r != '\'' {
+		token.token = tokens.ERR
+		// error
+	} else {
+		token.token = tokens.CHAR
+		token.to = data.pos
+		token.rawValue += string(data.r)
+	}
+	output <- token
+	close(output)
+}
+
+func getSimpleEscapeChar(r rune) (escaped rune, exists bool) {
+	exists = true
+	switch r {
+	case 'a':
+		escaped = '\a'
+	case 'b':
+		escaped = '\b'
+	case '\\':
+		escaped = '\\'
+	case 't':
+		escaped = '\t'
+	case 'n':
+		escaped = '\n'
+	case 'f':
+		escaped = '\f'
+	case 'r':
+		escaped = '\r'
+	case 'v':
+		escaped = '\v'
+	default:
+		return rune(0), false
+	}
+	return
+}

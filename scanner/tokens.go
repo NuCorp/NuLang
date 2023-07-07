@@ -3,6 +3,7 @@ package scanner
 import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils"
 )
 
 type TokenPos struct {
@@ -34,6 +35,23 @@ func (t TokenInfo) String() string {
 	}
 	return t.RawString()
 }
+func (t TokenInfo) PrintableString() (str string) {
+	defer func() {
+		if t.token == tokens.ERR {
+			str = "\\ERROR{ " + t.rawValue + " }"
+		}
+	}()
+	switch value := t.value.(type) {
+	case Int, Bool, Float, Fraction:
+		return fmt.Sprint(t.value)
+	case String:
+		return t.rawValue
+	case Char:
+		return "'" + string(value) + "'"
+	default:
+		return t.token.String()
+	}
+}
 func (t TokenInfo) Value() any        { return t.value }
 func (t TokenInfo) FromPos() TokenPos { return t.from }
 func (t TokenInfo) ToPos() TokenPos   { return t.to }
@@ -43,7 +61,7 @@ type CodeToken []TokenInfo
 func (code CodeToken) String() string {
 	str := ""
 	for _, tok := range code {
-		str += tok.String() + " "
+		str += tok.PrintableString() + " "
 	}
 	return str
 }
@@ -54,3 +72,10 @@ func (code CodeToken) TokenList() []tokens.Token {
 	}
 	return toks
 }
+
+type Int = uint
+type Float = float64
+type String = string
+type Char = rune
+type Bool = bool
+type Fraction = utils.Fraction

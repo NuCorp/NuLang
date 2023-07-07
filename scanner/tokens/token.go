@@ -3,7 +3,8 @@ package tokens
 type Token int
 
 const (
-	ERR = Token(iota)
+	NoInit = Token(iota)
+	ERR    = Token(iota)
 	IDENT
 	literalStart
 	INT      // int
