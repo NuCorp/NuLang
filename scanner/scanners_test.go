@@ -97,7 +97,7 @@ func TestScanCode(t *testing.T) {
 	t.Run("simple char 2", run("'*'", "'*' ", tokens.CHAR))
 	t.Run("simple char 3", run("'0'", "'0' ", tokens.CHAR))
 	t.Run("simple escape char", run(`'\n'`, "'\n' ", tokens.CHAR))
-	t.Run("value escape char", run(`'\0'`, `'' `, tokens.CHAR))
+	t.Run("value escape char", run(`'\0'`, "'\000' ", tokens.CHAR))
 	t.Run("complex escape char", run(`'\u{0x1f984}'`, "'\U0001f984' ", tokens.CHAR))
 
 	t.Run("simple literals value", func(t *testing.T) {

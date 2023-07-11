@@ -12,7 +12,7 @@ type scanChar struct {
 	isEscaped       bool
 	isUnicodeEscape bool
 
-	scanInt scanInt
+	scanInt *scanInt
 }
 
 func (s *scanChar) TokenInfo() TokenInfo {
@@ -21,7 +21,7 @@ func (s *scanChar) TokenInfo() TokenInfo {
 
 func (s *scanChar) validate(r rune, pos TokenPos) *scanChar {
 	s.token.rawValue += string(r)
-	s.token.to = pos
+	s.token.to = pos.AtNextCol()
 	return s
 }
 func (s *scanChar) invalidate() Scanner {
@@ -54,8 +54,8 @@ func (s *scanChar) escape(r rune, pos TokenPos) Scanner {
 	if s.isUnicodeEscape {
 		// TODO
 	}
-	if s.scanInt.TokenInfo().Token() != tokens.NoInit {
-		// TODO
+	if s.scanInt != nil {
+		return s.scanAscii(r, pos)
 	}
 	if escapedValue, found := getSimpleEscapeChar(r); found {
 		s.token.value = escapedValue
@@ -70,19 +70,38 @@ func (s *scanChar) escape(r rune, pos TokenPos) Scanner {
 		s.isUnicodeEscape = true
 	default:
 		if unicode.IsDigit(r) {
-			s.scanInt = scanInt{}
+			s.scanInt = new(scanInt)
+			return s.scanAscii(r, pos) // remake the make scan but now scanInt is expected
 		} else {
 			return s.error("message to do")
 		}
 	}
 	return s.validate(r, pos)
 }
+func (s *scanChar) scanAscii(r rune, pos TokenPos) Scanner {
+	if s.scanInt == nil {
+		panic("shouldn't be here")
+	}
+	next := s.scanInt.Scan(r, pos)
+	if next == nil {
+		if s.scanInt.value >= 0o10 {
+			return s.error("escaped value can be from 0 to 255")
+		}
+		s.token.value = rune(s.scanInt.value)
+		s.isEscaped = false
+		return s.Scan(r, pos) // it is no more the integer part, we need to rescan that rune
+	}
+	if next != s.scanInt {
+		return s.error("floating point or fraction are not valid escaped value")
+	}
+	return s.validate(r, pos)
+}
 func (s *scanChar) scanUnicode(r rune, pos TokenPos) Scanner {
-	if r == '{' && s.scanInt == (scanInt{}) {
-		s.scanInt = scanInt{}
+	if r == '{' && s.scanInt == nil {
+		s.scanInt = new(scanInt)
 		return nil
 	}
-	if r == '}' && s.scanInt != (scanInt{}) {
+	if r == '}' && s.scanInt != nil {
 		const UnicodeMaxValue = 0xFFF_FFF
 		if value, ok := s.scanInt.TokenInfo().Value().(Int); !ok {
 			// TODO: error, expected int value

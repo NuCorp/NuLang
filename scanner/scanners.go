@@ -45,13 +45,11 @@ func innerScan(lines []string) CodeToken {
 		}
 
 		nextScanner := scanner.Scan(r, pos)
+		tokenInfo := scanner.TokenInfo()
 		if nextScanner == nil {
-			tokenInfo := scanner.TokenInfo()
 			tokenCode = append(tokenCode, tokenInfo)
-			pos = tokenInfo.to
-		} else {
-			pos.col++
 		}
+		pos = tokenInfo.to
 		scanner = nextScanner
 	}
 
