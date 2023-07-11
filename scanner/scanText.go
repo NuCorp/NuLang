@@ -52,7 +52,7 @@ func (s *scanChar) inputValue(r rune, pos TokenPos) Scanner {
 }
 func (s *scanChar) escape(r rune, pos TokenPos) Scanner {
 	if s.isUnicodeEscape {
-		// TODO
+		return s.scanUnicode(r, pos)
 	}
 	if s.scanInt != nil {
 		return s.scanAscii(r, pos)
@@ -99,25 +99,30 @@ func (s *scanChar) scanAscii(r rune, pos TokenPos) Scanner {
 func (s *scanChar) scanUnicode(r rune, pos TokenPos) Scanner {
 	if r == '{' && s.scanInt == nil {
 		s.scanInt = new(scanInt)
-		return nil
+		return s.validate(r, pos)
 	}
 	if r == '}' && s.scanInt != nil {
 		const UnicodeMaxValue = 0xFFF_FFF
 		if value, ok := s.scanInt.TokenInfo().Value().(Int); !ok {
-			// TODO: error, expected int value
+			return s.error("missing unicode value") // TODO on log
 		} else if value > UnicodeMaxValue {
-			// TODO: error, unicode value are between 0x000_000 and 0xFFF_FFF
+			return s.error("unicode value are between 0x000_000 and 0xFFF_FFF") // TODO: log,
 		} else {
 			s.token.value = rune(value)
 		}
+		s.isEscaped = false
 		s.isUnicodeEscape = false
-
+		s.scanInt = nil
+		return s.validate(r, pos)
 	}
-	const UnicodeMax = 0xFFFFFF
-	if next := s.scanInt.Scan(r, pos); next != nil {
-		return s.error("message to do") // TODO
+	if s.scanInt == nil {
+		return s.error("missing '{' to make unicode")
 	}
-	return nil
+	next := s.scanInt.Scan(r, pos)
+	if next == nil {
+		return s.error("unterminated unicode escaped char; needed '}'")
+	}
+	return s.validate(r, pos)
 }
 func (s *scanChar) expectEnd(r rune, pos TokenPos) Scanner {
 	if r != '\'' {
