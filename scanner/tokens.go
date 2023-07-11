@@ -13,6 +13,14 @@ type TokenPos struct {
 func (pos TokenPos) Col() int       { return pos.col }
 func (pos TokenPos) Line() int      { return pos.line }
 func (pos TokenPos) String() string { return fmt.Sprintf("%v:%v", pos.col, pos.line) }
+func (pos TokenPos) AtNextCol() TokenPos {
+	pos.col++
+	return pos
+}
+func (pos TokenPos) AtNextLine() TokenPos {
+	pos.line++
+	return pos
+}
 func InvalidTokenPos() TokenPos {
 	return TokenPos{-1, -1}
 }
