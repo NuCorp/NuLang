@@ -45,7 +45,7 @@ func (s *scanChar) firstCall(r rune, pos TokenPos) Scanner {
 func (s *scanChar) inputValue(r rune, pos TokenPos) Scanner {
 	if r == '\\' {
 		s.isEscaped = true
-		return s
+		return s.validate(r, pos)
 	}
 	s.token.value = r
 	return s.validate(r, pos)
@@ -115,7 +115,7 @@ func (s *scanChar) Scan(r rune, pos TokenPos) Scanner {
 		return s.inputValue(r, pos)
 	}
 	if s.isEscaped {
-		s.escape(r, pos)
+		return s.escape(r, pos)
 	}
 	return s.expectEnd(r, pos)
 }
