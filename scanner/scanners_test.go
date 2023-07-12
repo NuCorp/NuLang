@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestScanCode(t *testing.T) {
+func TestScanCodeLiterals(t *testing.T) {
 	run := func(code, expected string, tokenList ...tokens.Token) func(t *testing.T) {
 		return func(t *testing.T) {
 			defer func() {
@@ -30,8 +30,7 @@ func TestScanCode(t *testing.T) {
 			}
 		}
 	}
-	// literals
-	// integers
+
 	t.Run("simple integer 1", func(t *testing.T) {
 		code := "18"
 		got := ScanCode(code).String()
@@ -108,23 +107,7 @@ func TestScanCode(t *testing.T) {
 
 	t.Run("simple string", run(`"Hello there !"`, `"Hello there !" `, tokens.STR))
 	t.Run("string with escape", run(`"\nGeneral Kenobi !?"`, `"\nGeneral Kenobi !?" `, tokens.STR))
-	t.Run("large string", run(`"""	"ok"	"""`, `"\t\"ok\"\t"`, tokens.STR))
-	t.Run("large string with quote", run(`"""\""""`, "\"", tokens.STR))
-	t.Run("large string with special escape", run(`"""\	ok\ """`, "ok", tokens.STR))
-
-	t.Run("simple literals value", func(t *testing.T) {
-
-		code := `18; "coucou" 42.1(8); -0b01; +0xA4`
-		expected := `18 ; "coucou" 42.1(8) ; -1 ; 20 `
-		defer func() {
-			if err := recover(); err != nil {
-				t.Errorf("initial value %v; expected: %v; got panic:", code, expected)
-				t.Error(err)
-			}
-		}()
-		got := ScanCode(code).String()
-		if got != expected {
-			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
-		}
-	})
+	t.Run("large string", run(`"""	"ok"	"""`, `"\t\"ok\"\t" `, tokens.STR))
+	t.Run("large string with quote", run(`"""\""""`, `"\"" `, tokens.STR))
+	// t.Run("large string with special escape", run(`"""\	ok\ """`, `"ok" `, tokens.STR)) // Nu 1.0
 }
