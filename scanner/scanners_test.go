@@ -107,8 +107,7 @@ func TestScanCode(t *testing.T) {
 	t.Run("complex escape char", run(`'\u{0x1f984}'`, "'\U0001f984' ", tokens.CHAR))
 
 	t.Run("simple string", run(`"Hello there !"`, `"Hello there !" `, tokens.STR))
-	t.Run("string with escape", run(`"\nGeneral Kenobi !?"`, `"
-General Kenobi !?" `, tokens.STR))
+	t.Run("string with escape", run(`"\nGeneral Kenobi !?"`, `"\nGeneral Kenobi !?" `, tokens.STR))
 	t.Run("large string", run(`"""	"ok"	"""`, `"\t\"ok\"\t"`, tokens.STR))
 	t.Run("large string with quote", run(`"""\""""`, "\"", tokens.STR))
 	t.Run("large string with special escape", run(`"""\	ok\ """`, "ok", tokens.STR))

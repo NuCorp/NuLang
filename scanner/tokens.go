@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
 )
@@ -52,7 +53,11 @@ func (t TokenInfo) PrintableString() (str string) {
 	case Int, Bool, Float, Fraction:
 		return fmt.Sprint(t.value)
 	case String:
-		return t.rawValue
+		jsonByte, err := json.Marshal(value)
+		if err != nil {
+			panic(err)
+		}
+		return string(jsonByte)
 	case Char:
 		return "'" + string(value) + "'"
 	default:

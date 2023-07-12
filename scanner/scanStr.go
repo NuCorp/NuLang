@@ -41,8 +41,7 @@ func (s *scanStr) Scan(r rune, pos TokenPos) Scanner {
 		return s.validate(r, pos)
 	}
 	if s.isEscape {
-		// TODO: return s.escape(r, pos)
-		panic("TODO")
+		return s.escape(r, pos)
 	}
 	if r == '"' && s.token.rawValue != "\"" {
 		return s.completed(r, pos)
