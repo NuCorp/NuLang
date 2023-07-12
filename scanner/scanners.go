@@ -91,12 +91,14 @@ func getScannerFor(r rune) Scanner {
 		return new(scanInt)
 	}
 	switch r {
-	case '\n', ';':
-		return new(scanEndOfInstruction)
 	case '\'':
 		return new(scanChar)
 	case '"':
 		return new(scanStr)
+	case '+', '-', '*', '/', '\\':
+		return new(scanOperator)
+	case '\n', ';':
+		return new(scanEndOfInstruction)
 	case ' ', '\t':
 		return new(ignoringScanner)
 	}

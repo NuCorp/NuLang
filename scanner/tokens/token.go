@@ -26,8 +26,12 @@ const (
 	DIV
 	FRACDIV
 
-	SEMI //;
 	operatorEnd
+	punctuationStart
+
+	SEMI //;
+
+	punctuationEnd
 )
 
 func (t Token) String() string {
@@ -36,31 +40,36 @@ func (t Token) String() string {
 	}
 	return "❏"
 }
-func (t Token) IsLiteral() bool  { return literalStart < t && t < literalEnd }
-func (t Token) IsKeyword() bool  { return keywordStart < t && t < keywordEnd }
-func (t Token) IsOperator() bool { return operatorStart < t && t < operatorEnd }
+func (t Token) IsLiteral() bool     { return literalStart < t && t < literalEnd }
+func (t Token) IsKeyword() bool     { return keywordStart < t && t < keywordEnd }
+func (t Token) IsOperator() bool    { return operatorStart < t && t < operatorEnd }
+func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctuationEnd }
 
 var tokenStr = map[Token]string{
 	ERR: "TokenError",
 
 	IDENT: "Identifier",
 
+	// literals
 	INT:      "INT",
 	FLOAT:    "FLOAT",
 	FRACTION: "FRACTION",
 	CHAR:     "CHAR",
 	STR:      "STR",
 
+	// keywords
 	TRUE:  "true",
 	FALSE: "false",
 
 	PKG: "package",
 
+	// operators
 	PLUS:    "+",
 	MINUS:   "-",
 	TIME:    "*",
 	DIV:     "/",
 	FRACDIV: "\\",
 
+	// punctuations
 	SEMI: ";",
 }
