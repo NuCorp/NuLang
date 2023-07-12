@@ -18,7 +18,14 @@ const (
 	FALSE // false,
 	PKG   // package,
 	keywordEnd
+
 	operatorStart
+	PLUS
+	MINUS
+	TIME
+	DIV
+	FRACDIV
+
 	SEMI //;
 	operatorEnd
 )
@@ -48,6 +55,12 @@ var tokenStr = map[Token]string{
 	FALSE: "false",
 
 	PKG: "package",
+
+	PLUS:    "+",
+	MINUS:   "-",
+	TIME:    "*",
+	DIV:     "/",
+	FRACDIV: "\\",
 
 	SEMI: ";",
 }
