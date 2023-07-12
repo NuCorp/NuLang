@@ -3,7 +3,6 @@ package scanner
 import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils"
 )
 
 type TokenPos struct {
@@ -80,10 +79,3 @@ func (code CodeToken) TokenList() []tokens.Token {
 	}
 	return toks
 }
-
-type Int = uint
-type Float = float64
-type String = string
-type Char = rune
-type Bool = bool
-type Fraction = utils.Fraction

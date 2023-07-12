@@ -11,15 +11,17 @@ type Scanner interface {
 	TokenInfo() TokenInfo
 }
 
-type errorScanner TokenPos
+type ignoringScanner struct{}
 
-func (err *errorScanner) Scan(_ rune, pos TokenPos) Scanner {
-	*err = errorScanner(pos)
+func (s ignoringScanner) Scan(_ rune, pos TokenPos) Scanner {
 	return nil
 }
-func (err *errorScanner) TokenInfo() TokenInfo {
-	return TokenInfo{to: TokenPos(*err)}
+func (s ignoringScanner) TokenInfo() TokenInfo {
+	return TokenInfo{}
 }
+
+type errorScanner struct{ ignoringScanner }
+
 func (*errorScanner) Error() string {
 	return "unavailable scanner"
 }
@@ -41,6 +43,10 @@ func innerScan(lines []string) CodeToken {
 			scanner = getScannerFor(r)
 			if err, isErr := scanner.(error); isErr {
 				panic(err) // TODO: in log
+			} else if _, toIgnore := scanner.(*ignoringScanner); toIgnore {
+				pos.col++
+				scanner = nil
+				continue
 			}
 		}
 
@@ -58,19 +64,6 @@ func innerScan(lines []string) CodeToken {
 
 func ScanCode(code string) CodeToken {
 	return innerScan(strings.Split(code, "\n"))
-}
-
-func getScannerFor(r rune) Scanner {
-	if unicode.IsDigit(r) {
-		return new(scanInt)
-	}
-	switch r {
-	case '\n', ';':
-		return new(scanEndOfInstruction)
-	case '\'':
-		return new(scanChar)
-	}
-	return new(errorScanner)
 }
 
 type scanEndOfInstruction struct {
@@ -91,4 +84,21 @@ func (s *scanEndOfInstruction) Scan(r rune, pos TokenPos) Scanner {
 		return s
 	}
 	return nil
+}
+
+func getScannerFor(r rune) Scanner {
+	if unicode.IsDigit(r) {
+		return new(scanInt)
+	}
+	switch r {
+	case '\n', ';':
+		return new(scanEndOfInstruction)
+	case '\'':
+		return new(scanChar)
+	case '"':
+		return new(scanStr)
+	case ' ', '\t':
+		return new(ignoringScanner)
+	}
+	return new(errorScanner)
 }
