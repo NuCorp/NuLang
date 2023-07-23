@@ -1,12 +1,13 @@
 package scanner
 
-import "github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+import (
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"strings"
+)
 
 type scanOperatorAndPunctuation struct {
 	token TokenInfo
 	init  bool
-
-	lastValidToken TokenInfo
 }
 
 func (s *scanOperatorAndPunctuation) TokenInfo() TokenInfo {
@@ -17,8 +18,7 @@ func (s *scanOperatorAndPunctuation) validate(r rune, pos TokenPos) Scanner {
 	s.token.to = pos.AtNextCol()
 	return s
 }
-func (s *scanOperatorAndPunctuation) invalidate() Scanner {
-	s.token = s.lastValidToken
+func (*scanOperatorAndPunctuation) invalidate() Scanner {
 	return nil
 }
 
@@ -48,7 +48,7 @@ func (s *scanOperatorAndPunctuation) Scan(r rune, pos TokenPos) Scanner {
 		tokens.GT.String():     {{'=', tokens.GE}, {'>', tokens.RSHIFT}},
 		tokens.LT.String():     {{'=', tokens.LE}, {'<', tokens.LSHIFT}, {'-', tokens.LARROW}},
 		tokens.COLON.String():  {{'=', tokens.DEFINE}},
-		tokens.DOT.String():    {{'.', tokens.DOT}},
+		tokens.DOT.String():    {{'.', tokens.PERIOD}},
 		"..":                   {{'.', tokens.PERIOD}},
 		"": {
 			{'+', tokens.PLUS},
@@ -84,10 +84,9 @@ func (s *scanOperatorAndPunctuation) Scan(r rune, pos TokenPos) Scanner {
 		for _, possibleNext := range nexts {
 			if possibleNext.For == r {
 				s.token.token = possibleNext.Token
-				if s.token.rawValue+string(r) == possibleNext.Token.String() {
-					defer func() {
-						s.lastValidToken = s.token
-					}()
+				if s.token.rawValue+string(r) != possibleNext.Token.String() {
+					s.token.token = tokens.ERR
+					s.token.value = UnexpectedCharacter(s.token, r, rune(strings.TrimPrefix(possibleNext.Token.String(), s.token.rawValue+string(r))[0]))
 				}
 				return s.validate(r, pos)
 			}

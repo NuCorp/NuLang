@@ -146,4 +146,5 @@ func TestScanCodeOperators(t *testing.T) {
 		tokens.DOT, tokens.PERIOD, tokens.COLON, tokens.SEMI, tokens.OBRAC, tokens.CBRAC, tokens.OPAREN, tokens.CPAREN,
 		tokens.OBRAK, tokens.CBRAK, tokens.RARROW, tokens.LARROW, tokens.IMPL, tokens.COMA))
 
+	t.Run("period error", run("..+", tokens.ERR, tokens.PLUS))
 }
