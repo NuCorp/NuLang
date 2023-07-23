@@ -135,12 +135,15 @@ func TestScanCodeOperators(t *testing.T) {
 
 	t.Run("arithmetic operators", run("+ - * / \\ %", tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.FRAC_DIV, tokens.MOD))
 	t.Run("boolean operators", run("&& || !", tokens.AND, tokens.OR, tokens.NOT))
-	t.Run("logical operators", run("& | ~", tokens.LAND, tokens.LOR, tokens.XOR))
+	t.Run("logical operators", run("& | ~ << >>", tokens.LAND, tokens.LOR, tokens.XOR, tokens.LSHIFT, tokens.RSHIFT))
 	t.Run("unary operators", run("++ -- ?", tokens.PLUS_PLUS, tokens.MINUS_MINUS, tokens.ASK))
 	t.Run("optional operator", run("? ??", tokens.ASK, tokens.ASKOR))
 	t.Run("comparison operators", run("== > >= <= < !=", tokens.EQ, tokens.GT, tokens.GE, tokens.LE, tokens.LT, tokens.NEQ))
 	t.Run("assignment operators", run("= += -= *= /= %= &&= ||= &= |= ~= :=",
 		tokens.ASSIGN, tokens.PLUS_ASSIGN, tokens.MINUS_ASSIGN, tokens.TIME_ASSIGN, tokens.DIV_ASSIGN, tokens.MOD_ASSIGN,
 		tokens.AND_ASSIGN, tokens.OR_ASSIGN, tokens.LAND_ASSIGN, tokens.LOR_ASSIGN, tokens.XOR_ASSIGN, tokens.DEFINE))
+	t.Run("punctuations", run(". ... : ; { } ( ) [ ] -> <- => ,",
+		tokens.DOT, tokens.PERIOD, tokens.COLON, tokens.SEMI, tokens.OBRAC, tokens.CBRAC, tokens.OPAREN, tokens.CPAREN,
+		tokens.OBRAK, tokens.CBRAK, tokens.RARROW, tokens.LARROW, tokens.IMPL, tokens.COMA))
 
 }

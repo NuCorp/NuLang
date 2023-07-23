@@ -20,7 +20,6 @@ const (
 	keywordEnd
 
 	operatorStart
-	arithmeticOperatorStart
 	PLUS
 	MINUS
 	TIME
@@ -30,20 +29,20 @@ const (
 
 	PLUS_PLUS   // "++",
 	MINUS_MINUS // "--",
-	ASK         // "?",
-	ASKOR       // "??",
-	arithmeticOperatorEnd
-	booleanOperatorStart
+
+	ASK   // "?",
+	ASKOR // "??",
+
+	NOT // "!"
+
+	LAND   // "&",
+	LOR    // "|",
+	XOR    // "~"
+	LSHIFT // "<<",
+	RSHIFT // ">>",
+
 	AND // "&&",
 	OR  // "||",
-	NOT // "!"
-	booleanOperatorEnd
-	logicalOperatorStart
-	LAND // "&",
-	LOR  // "|",
-	XOR  // "~"
-	logicalOperatorEnd
-
 	EQ  // "=="
 	NEQ // "!="
 	GT  // ">"
@@ -68,8 +67,22 @@ const (
 
 	punctuationStart
 
-	SEMI  //;
-	COLON // ":"
+	SEMI   //;
+	COLON  // ":"
+	COMA   // ",",
+	DOT    // ".",
+	PERIOD // "...",
+
+	IMPL   // "=>",
+	RARROW // "->",
+	LARROW // "<-",
+
+	OBRAC  // "{",
+	OBRAK  // "[",
+	OPAREN // "(",
+	CBRAC  // "}",
+	CBRAK  // "]",
+	CPAREN // ")",
 	punctuationEnd
 )
 
@@ -79,13 +92,10 @@ func (t Token) String() string {
 	}
 	return "❏"
 }
-func (t Token) IsLiteral() bool  { return literalStart < t && t < literalEnd }
-func (t Token) IsKeyword() bool  { return keywordStart < t && t < keywordEnd }
-func (t Token) IsOperator() bool { return operatorStart < t && t < operatorEnd }
-func (t Token) IsLogicalOperator() bool {
-	return logicalOperatorStart < t && t < logicalOperatorEnd || t == NOT
-}
-func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctuationEnd || t == NOT }
+func (t Token) IsLiteral() bool     { return literalStart < t && t < literalEnd }
+func (t Token) IsKeyword() bool     { return keywordStart < t && t < keywordEnd }
+func (t Token) IsOperator() bool    { return operatorStart < t && t < operatorEnd }
+func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctuationEnd }
 
 var tokenStr = map[Token]string{
 	ERR: "TokenError",
@@ -122,9 +132,11 @@ var tokenStr = map[Token]string{
 	OR:  "||",
 	NOT: "!",
 
-	LAND: "&",
-	LOR:  "|",
-	XOR:  "~",
+	LAND:   "&",
+	LOR:    "|",
+	XOR:    "~",
+	LSHIFT: "<<",
+	RSHIFT: ">>",
 
 	EQ:  "==",
 	NEQ: "!=",
@@ -147,6 +159,20 @@ var tokenStr = map[Token]string{
 	OR_ASSIGN:    "||=",
 
 	// punctuations
-	SEMI:  ";",
-	COLON: ":",
+	SEMI:   ";",
+	COLON:  ":",
+	COMA:   ",",
+	DOT:    ".",
+	PERIOD: "...",
+
+	IMPL:   "=>",
+	RARROW: "->",
+	LARROW: "<-",
+
+	OBRAC:  "{",
+	OBRAK:  "[",
+	OPAREN: "(",
+	CBRAC:  "}",
+	CBRAK:  "]",
+	CPAREN: ")",
 }
