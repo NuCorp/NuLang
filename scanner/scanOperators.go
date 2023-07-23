@@ -29,8 +29,8 @@ func (s *scanOperator) Scan(r rune, pos TokenPos) Scanner {
 		For   rune
 		Token tokens.Token
 	}{
-		tokens.PLUS:   {{'+', tokens.PLUSPLUS}},
-		tokens.MINUS:  {{'-', tokens.MINUSMINUS}},
+		tokens.PLUS:   {{'+', tokens.PLUS_PLUS}},
+		tokens.MINUS:  {{'-', tokens.MINUS_MINUS}},
 		tokens.LAND:   {{'&', tokens.AND}},
 		tokens.LOR:    {{'|', tokens.OR}},
 		tokens.ASK:    {{'?', tokens.ASKOR}},
@@ -43,7 +43,7 @@ func (s *scanOperator) Scan(r rune, pos TokenPos) Scanner {
 			{'-', tokens.MINUS},
 			{'*', tokens.TIME},
 			{'/', tokens.DIV},
-			{'\\', tokens.FRACDIV},
+			{'\\', tokens.FRAC_DIV},
 			{'%', tokens.MOD},
 
 			{'&', tokens.LAND},

@@ -25,13 +25,13 @@ const (
 	MINUS
 	TIME
 	DIV
-	FRACDIV
+	FRAC_DIV
 	MOD
 
-	PLUSPLUS   // "++",
-	MINUSMINUS // "--",
-	ASK        // "?",
-	ASKOR      // "??",
+	PLUS_PLUS   // "++",
+	MINUS_MINUS // "--",
+	ASK         // "?",
+	ASKOR       // "??",
 	arithmeticOperatorEnd
 	booleanOperatorStart
 	AND // "&&",
@@ -51,7 +51,18 @@ const (
 	GE  // ">="
 	LE  // "<="
 
-	ASSIGN // "="
+	ASSIGN       // "="
+	DEFINE       // ":="
+	PLUS_ASSIGN  // "+="
+	MINUS_ASSIGN // "-="
+	TIME_ASSIGN  // "*="
+	DIV_ASSIGN   // "/="
+	MOD_ASSIGN   // "%="
+	LAND_ASSIGN  // "&="
+	LOR_ASSIGN   // "|="
+	XOR_ASSIGN   // "~="
+	AND_ASSIGN   // "&&="
+	OR_ASSIGN    // "||="
 
 	operatorEnd
 
@@ -95,14 +106,14 @@ var tokenStr = map[Token]string{
 	PKG: "package",
 
 	// operators
-	PLUS:       "+",
-	MINUS:      "-",
-	TIME:       "*",
-	DIV:        "/",
-	FRACDIV:    "\\",
-	MOD:        "%",
-	PLUSPLUS:   "++",
-	MINUSMINUS: "--",
+	PLUS:        "+",
+	MINUS:       "-",
+	TIME:        "*",
+	DIV:         "/",
+	FRAC_DIV:    "\\",
+	MOD:         "%",
+	PLUS_PLUS:   "++",
+	MINUS_MINUS: "--",
 
 	ASK:   "?",
 	ASKOR: "??",
@@ -122,7 +133,18 @@ var tokenStr = map[Token]string{
 	GE:  ">=",
 	LE:  "<=",
 
-	ASSIGN: "=",
+	ASSIGN:       "=",
+	DEFINE:       ":=",
+	PLUS_ASSIGN:  "+=",
+	MINUS_ASSIGN: "-=",
+	TIME_ASSIGN:  "*=",
+	DIV_ASSIGN:   "/=",
+	MOD_ASSIGN:   "%=",
+	LAND_ASSIGN:  "&=",
+	LOR_ASSIGN:   "|=",
+	XOR_ASSIGN:   "~=",
+	AND_ASSIGN:   "&&=",
+	OR_ASSIGN:    "||=",
 
 	// punctuations
 	SEMI: ";",
