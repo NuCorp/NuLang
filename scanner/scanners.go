@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
 	"strings"
 	"unicode"
@@ -52,6 +53,9 @@ func innerScan(lines []string) CodeToken {
 
 		nextScanner := scanner.Scan(r, pos)
 		tokenInfo := scanner.TokenInfo()
+		if tokenInfo.Token() == tokens.NoInit {
+			panic(fmt.Sprintf("Error for %T with first input: '%v'\n[CONTACT NU CORP]", scanner, string(r))) // TODO replace the [CONTACT NU CORP]
+		}
 		if nextScanner == nil {
 			tokenCode = append(tokenCode, tokenInfo)
 		}
@@ -95,7 +99,7 @@ func getScannerFor(r rune) Scanner {
 		return new(scanChar)
 	case '"':
 		return new(scanStr)
-	case '+', '-', '*', '/', '\\':
+	case '+', '-', '*', '/', '\\', '&', '|', '!', '~', '%', '?', '=', '>', '<':
 		return new(scanOperator)
 	case '\n', ';':
 		return new(scanEndOfInstruction)

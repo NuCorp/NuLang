@@ -138,5 +138,5 @@ func TestScanCodeOperators(t *testing.T) {
 	t.Run("logical operators", run("& | ~", tokens.LAND, tokens.LOR, tokens.XOR))
 	t.Run("unary operators", run("++ -- ?", tokens.PLUSPLUS, tokens.MINUSMINUS, tokens.ASK))
 	t.Run("optional operator", run("? ??", tokens.ASK, tokens.ASKOR))
-	t.Run("comparison operators", run("== > >= <= < !=", tokens.EQ, tokens.GT, tokens.GE, tokens.LT, tokens.LE, tokens.NEQ))
+	t.Run("comparison operators", run("== > >= <= < !=", tokens.EQ, tokens.GT, tokens.GE, tokens.LE, tokens.LT, tokens.NEQ))
 }

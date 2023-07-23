@@ -51,6 +51,8 @@ const (
 	GE  // ">="
 	LE  // "<="
 
+	ASSIGN // "="
+
 	operatorEnd
 
 	punctuationStart
@@ -119,6 +121,8 @@ var tokenStr = map[Token]string{
 	LT:  "<",
 	GE:  ">=",
 	LE:  "<=",
+
+	ASSIGN: "=",
 
 	// punctuations
 	SEMI: ";",
