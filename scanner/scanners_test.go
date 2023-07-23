@@ -123,7 +123,7 @@ func TestScanCodeOperators(t *testing.T) {
 
 			got := ScanCode(code)
 			if len(got) != len(expectedTokens) {
-				t.Fatalf("expected %v element but got %v", len(expectedTokens), len(got))
+				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got)
 			}
 			for idx, expectedToken := range expectedTokens {
 				if expectedToken != got[idx].Token() {
@@ -133,5 +133,10 @@ func TestScanCodeOperators(t *testing.T) {
 		}
 	}
 
-	t.Run("arithmetic operators", run("+ - * / \\", tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.FRACDIV))
+	t.Run("arithmetic operators", run("+ - * / \\ %", tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.FRACDIV, tokens.MOD))
+	t.Run("boolean operators", run("&& || !", tokens.AND, tokens.OR, tokens.NOT))
+	t.Run("logical operators", run("& | ~", tokens.LAND, tokens.LOR, tokens.XOR))
+	t.Run("unary operators", run("++ -- ?", tokens.PLUSPLUS, tokens.MINUSMINUS, tokens.ASK))
+	t.Run("optional operator", run("? ??", tokens.ASK, tokens.ASKOR))
+	t.Run("comparison operators", run("== > >= <= < !=", tokens.EQ, tokens.GT, tokens.GE, tokens.LT, tokens.LE, tokens.NEQ))
 }

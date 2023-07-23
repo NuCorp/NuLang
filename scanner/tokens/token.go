@@ -20,13 +20,39 @@ const (
 	keywordEnd
 
 	operatorStart
+	arithmeticOperatorStart
 	PLUS
 	MINUS
 	TIME
 	DIV
 	FRACDIV
+	MOD
+
+	PLUSPLUS   // "++",
+	MINUSMINUS // "--",
+	ASK        // "?",
+	ASKOR      // "??",
+	arithmeticOperatorEnd
+	booleanOperatorStart
+	AND // "&&",
+	OR  // "||",
+	NOT // "!"
+	booleanOperatorEnd
+	logicalOperatorStart
+	LAND // "&",
+	LOR  // "|",
+	XOR  // "~"
+	logicalOperatorEnd
+
+	EQ  // "=="
+	NEQ // "!="
+	GT  // ">"
+	LT  // "<"
+	GE  // ">="
+	LE  // "<="
 
 	operatorEnd
+
 	punctuationStart
 
 	SEMI //;
@@ -40,10 +66,13 @@ func (t Token) String() string {
 	}
 	return "❏"
 }
-func (t Token) IsLiteral() bool     { return literalStart < t && t < literalEnd }
-func (t Token) IsKeyword() bool     { return keywordStart < t && t < keywordEnd }
-func (t Token) IsOperator() bool    { return operatorStart < t && t < operatorEnd }
-func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctuationEnd }
+func (t Token) IsLiteral() bool  { return literalStart < t && t < literalEnd }
+func (t Token) IsKeyword() bool  { return keywordStart < t && t < keywordEnd }
+func (t Token) IsOperator() bool { return operatorStart < t && t < operatorEnd }
+func (t Token) IsLogicalOperator() bool {
+	return logicalOperatorStart < t && t < logicalOperatorEnd || t == NOT
+}
+func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctuationEnd || t == NOT }
 
 var tokenStr = map[Token]string{
 	ERR: "TokenError",
@@ -64,11 +93,32 @@ var tokenStr = map[Token]string{
 	PKG: "package",
 
 	// operators
-	PLUS:    "+",
-	MINUS:   "-",
-	TIME:    "*",
-	DIV:     "/",
-	FRACDIV: "\\",
+	PLUS:       "+",
+	MINUS:      "-",
+	TIME:       "*",
+	DIV:        "/",
+	FRACDIV:    "\\",
+	MOD:        "%",
+	PLUSPLUS:   "++",
+	MINUSMINUS: "--",
+
+	ASK:   "?",
+	ASKOR: "??",
+
+	AND: "&&",
+	OR:  "||",
+	NOT: "!",
+
+	LAND: "&",
+	LOR:  "|",
+	XOR:  "~",
+
+	EQ:  "==",
+	NEQ: "!=",
+	GT:  ">",
+	LT:  "<",
+	GE:  ">=",
+	LE:  "<=",
 
 	// punctuations
 	SEMI: ";",
