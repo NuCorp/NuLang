@@ -99,7 +99,7 @@ func getScannerFor(r rune) Scanner {
 		return new(scanChar)
 	case '"':
 		return new(scanStr)
-	case '+', '-', '*', '/', '\\', '&', '|', '!', '~', '%', '?', '=', '>', '<':
+	case '+', '-', '*', '/', '\\', '&', '|', '!', '~', '%', '?', '=', '>', '<', ':':
 		return new(scanOperator)
 	case '\n', ';':
 		return new(scanEndOfInstruction)

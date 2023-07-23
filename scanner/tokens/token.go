@@ -68,8 +68,8 @@ const (
 
 	punctuationStart
 
-	SEMI //;
-
+	SEMI  //;
+	COLON // ":"
 	punctuationEnd
 )
 
@@ -147,5 +147,6 @@ var tokenStr = map[Token]string{
 	OR_ASSIGN:    "||=",
 
 	// punctuations
-	SEMI: ";",
+	SEMI:  ";",
+	COLON: ":",
 }

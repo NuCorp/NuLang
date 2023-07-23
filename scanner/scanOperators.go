@@ -29,15 +29,22 @@ func (s *scanOperator) Scan(r rune, pos TokenPos) Scanner {
 		For   rune
 		Token tokens.Token
 	}{
-		tokens.PLUS:   {{'+', tokens.PLUS_PLUS}},
-		tokens.MINUS:  {{'-', tokens.MINUS_MINUS}},
-		tokens.LAND:   {{'&', tokens.AND}},
-		tokens.LOR:    {{'|', tokens.OR}},
+		tokens.PLUS:   {{'+', tokens.PLUS_PLUS}, {'=', tokens.PLUS_ASSIGN}},
+		tokens.MINUS:  {{'-', tokens.MINUS_MINUS}, {'=', tokens.MINUS_ASSIGN}},
+		tokens.TIME:   {{'=', tokens.TIME_ASSIGN}},
+		tokens.DIV:    {{'=', tokens.DIV_ASSIGN}},
+		tokens.MOD:    {{'=', tokens.MOD_ASSIGN}},
+		tokens.AND:    {{'=', tokens.AND_ASSIGN}},
+		tokens.OR:     {{'=', tokens.OR_ASSIGN}},
+		tokens.XOR:    {{'=', tokens.XOR_ASSIGN}},
+		tokens.LAND:   {{'&', tokens.AND}, {'=', tokens.LAND_ASSIGN}},
+		tokens.LOR:    {{'|', tokens.OR}, {'=', tokens.LOR_ASSIGN}},
 		tokens.ASK:    {{'?', tokens.ASKOR}},
 		tokens.ASSIGN: {{'=', tokens.EQ}},
 		tokens.NOT:    {{'=', tokens.NEQ}},
 		tokens.GT:     {{'=', tokens.GE}},
 		tokens.LT:     {{'=', tokens.LE}},
+		tokens.COLON:  {{'=', tokens.DEFINE}},
 		tokens.NoInit: {
 			{'+', tokens.PLUS},
 			{'-', tokens.MINUS},
@@ -56,6 +63,8 @@ func (s *scanOperator) Scan(r rune, pos TokenPos) Scanner {
 			{'=', tokens.ASSIGN},
 			{'>', tokens.GT},
 			{'<', tokens.LT},
+
+			{':', tokens.COLON},
 		},
 	}
 	if nexts, found := nextPossibleTokensFor[s.token.token]; found {
