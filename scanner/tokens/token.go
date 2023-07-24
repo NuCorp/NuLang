@@ -146,9 +146,6 @@ func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctua
 
 func ForEach(forFunction func(token Token)) {
 	for _, token := range strKeyword {
-		if token == ERR {
-			continue
-		}
 		forFunction(token)
 	}
 }

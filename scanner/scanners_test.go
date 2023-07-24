@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"math/rand"
 	"testing"
 )
 
@@ -175,8 +176,21 @@ func TestScanCodeText(t *testing.T) {
 	t.Run("keyword with ident", run("var a int import Std as standard", tokens.VAR, tokens.IDENT, tokens.IDENT,
 		tokens.IMPORT, tokens.IDENT, tokens.AS, tokens.IDENT))
 	t.Run("no ident ident and underscored ident", run("_ _yo", tokens.NO_IDENT, tokens.IDENT))
-}
 
-func TestScanCode(t *testing.T) {
+	var keywordTokens []tokens.Token
+	tokens.ForEach(func(tok tokens.Token) {
+		if !tok.IsKeyword() {
+			return
+		}
+		keywordTokens = append(keywordTokens, tok)
+	})
 
+	t.Run("random keywords", func(t *testing.T) {
+		for i := 0; i < 10; i++ {
+			idx := rand.Int() % len(keywordTokens)
+			token := keywordTokens[idx]
+			t.Logf("[%v/10] testing token: %v", i+1, token)
+			run(token.String(), token)
+		}
+	})
 }
