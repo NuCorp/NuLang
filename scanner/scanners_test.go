@@ -148,3 +148,27 @@ func TestScanCodeOperators(t *testing.T) {
 
 	t.Run("period error", run("..+", tokens.ERR, tokens.PLUS))
 }
+
+func TestScanCodeKeywords(t *testing.T) {
+	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
+		return func(t *testing.T) {
+			defer func() {
+				if err := recover(); err != nil {
+					t.Error(err)
+				}
+			}()
+
+			got := ScanCode(code)
+			if len(got) != len(expectedTokens) {
+				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got)
+			}
+			for idx, expectedToken := range expectedTokens {
+				if expectedToken != got[idx].Token() {
+					t.Errorf("wrong token at %v (n°%v) expected: %v but got %v", got[idx].FromPos(), idx+1, expectedToken, got[idx].Token())
+				}
+			}
+		}
+	}
+
+	t.Run("one keyword", run("package", tokens.PKG))
+}

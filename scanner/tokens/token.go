@@ -16,7 +16,53 @@ const (
 	keywordStart
 	TRUE  // true,
 	FALSE // false,
-	PKG   // package,
+
+	PKG    // package,
+	IMPORT // import
+
+	TYPE      // type
+	STRUCT    // struct
+	INTERFACE // interface
+	ENUM      // enum
+	EXTENSION // extension
+	CAST      // cast
+	AS        // as
+	IS        // is
+	EXPLICIT  // explicit
+	IMPLICIT  // implicit
+	DELETE    // delete
+	NEW       // new
+	INIT      // init
+	OPERATOR  // operator
+	WITH      // with
+	ALIAS     // alias
+
+	VAR   // var
+	CONST // const
+	FUNC  // func
+	DEFER // defer
+	RUN   // run
+	CHAN  // chan
+
+	IF       // if
+	THEN     // then
+	ELSE     // else
+	FOR      // for
+	IN       // in
+	TO       // to
+	WHILE    // while
+	DO       // do
+	CASE     // case
+	BREAK    // break
+	CONTINUE // continue
+	DEFAULT  // default
+
+	TRY    // try
+	CATCH  // catch
+	THROW  // throw
+	NIL    // nil
+	RETURN // return
+
 	keywordEnd
 
 	operatorStart
@@ -113,7 +159,51 @@ var tokenStr = map[Token]string{
 	TRUE:  "true",
 	FALSE: "false",
 
-	PKG: "package",
+	PKG:    "package",
+	IMPORT: "import",
+
+	TYPE:      "type",
+	STRUCT:    "struct",
+	INTERFACE: "interface",
+	ENUM:      "enum",
+	EXTENSION: "extension",
+	CAST:      "cast",
+	AS:        "as",
+	IS:        "is",
+	EXPLICIT:  "explicit",
+	IMPLICIT:  "implicit",
+	DELETE:    "delete",
+	NEW:       "new",
+	INIT:      "init",
+	OPERATOR:  "operator",
+	WITH:      "with",
+	ALIAS:     "alias",
+
+	VAR:   "var",
+	CONST: "const",
+	FUNC:  "func",
+	DEFER: "defer",
+	RUN:   "run",
+	CHAN:  "chan",
+
+	IF:       "if",
+	THEN:     "then",
+	ELSE:     "else",
+	FOR:      "for",
+	IN:       "in",
+	TO:       "to",
+	WHILE:    "while",
+	DO:       "do",
+	CASE:     "case",
+	BREAK:    "break",
+	CONTINUE: "continue",
+	DEFAULT:  "default",
+
+	TRY:    "try",
+	CATCH:  "catch",
+	THROW:  "throw",
+	NIL:    "nil",
+	RETURN: "return",
 
 	// operators
 	PLUS:        "+",
