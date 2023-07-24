@@ -149,7 +149,7 @@ func TestScanCodeOperators(t *testing.T) {
 	t.Run("period error", run("..+", tokens.ERR, tokens.PLUS))
 }
 
-func TestScanCodeKeywords(t *testing.T) {
+func TestScanCodeText(t *testing.T) {
 	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
 		return func(t *testing.T) {
 			defer func() {
@@ -171,4 +171,12 @@ func TestScanCodeKeywords(t *testing.T) {
 	}
 
 	t.Run("one keyword", run("package", tokens.PKG))
+	t.Run("some keyword", run("package import var func", tokens.PKG, tokens.IMPORT, tokens.VAR, tokens.FUNC))
+	t.Run("keyword with ident", run("var a int import Std as standard", tokens.VAR, tokens.IDENT, tokens.IDENT,
+		tokens.IMPORT, tokens.IDENT, tokens.AS, tokens.IDENT))
+	t.Run("no ident ident and underscored ident", run("_ _yo", tokens.NO_IDENT, tokens.IDENT))
+}
+
+func TestScanCode(t *testing.T) {
+
 }

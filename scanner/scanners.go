@@ -94,6 +94,9 @@ func getScannerFor(r rune) Scanner {
 	if unicode.IsDigit(r) {
 		return new(scanInt)
 	}
+	if unicode.IsLetter(r) || r == '_' {
+		return new(scanText)
+	}
 	switch r {
 	case '\'':
 		return new(scanChar)

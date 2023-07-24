@@ -6,6 +6,7 @@ const (
 	NoInit = Token(iota)
 	ERR    = Token(iota)
 	IDENT
+	NO_IDENT // "_"
 	literalStart
 	INT      // int
 	FLOAT    // float
@@ -143,10 +144,36 @@ func (t Token) IsKeyword() bool     { return keywordStart < t && t < keywordEnd 
 func (t Token) IsOperator() bool    { return operatorStart < t && t < operatorEnd }
 func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctuationEnd }
 
+func ForEach(forFunction func(token Token)) {
+	for _, token := range strKeyword {
+		if token == ERR {
+			continue
+		}
+		forFunction(token)
+	}
+}
+
+var strKeyword = func() map[string]Token {
+	ret := map[string]Token{}
+	for tok := keywordStart + 1; tok < keywordEnd; tok++ {
+		ret[tok.String()] = tok
+	}
+	return ret
+}()
+
+func GetKeywordForText(text string) Token {
+	tok, found := strKeyword[text]
+	if !found {
+		tok = IDENT
+	}
+	return tok
+}
+
 var tokenStr = map[Token]string{
 	ERR: "TokenError",
 
-	IDENT: "Identifier",
+	IDENT:    "Identifier",
+	NO_IDENT: "_",
 
 	// literals
 	INT:      "INT",
