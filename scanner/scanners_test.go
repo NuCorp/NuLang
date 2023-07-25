@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestScanCodeLiterals(t *testing.T) {
+func TestTokenizeCodeLiterals(t *testing.T) {
 	run := func(code, expected string, tokenList ...tokens.Token) func(t *testing.T) {
 		return func(t *testing.T) {
 			defer func() {
@@ -15,7 +15,7 @@ func TestScanCodeLiterals(t *testing.T) {
 					t.Error(err)
 				}
 			}()
-			scanCode := ScanCode(code)
+			scanCode := TokenizeCode(code)
 			got := scanCode.String()
 			if got != expected {
 				t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -34,7 +34,7 @@ func TestScanCodeLiterals(t *testing.T) {
 
 	t.Run("simple integer 1", func(t *testing.T) {
 		code := "18"
-		got := ScanCode(code).String()
+		got := TokenizeCode(code).String()
 		expected := "18 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -42,7 +42,7 @@ func TestScanCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 2", func(t *testing.T) {
 		code := "31"
-		got := ScanCode(code).String()
+		got := TokenizeCode(code).String()
 		expected := "31 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -50,7 +50,7 @@ func TestScanCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 3", func(t *testing.T) {
 		code := "42"
-		got := ScanCode(code).String()
+		got := TokenizeCode(code).String()
 		expected := "42 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -58,7 +58,7 @@ func TestScanCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 4", func(t *testing.T) {
 		code := "23"
-		got := ScanCode(code).String()
+		got := TokenizeCode(code).String()
 		expected := "23 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -66,7 +66,7 @@ func TestScanCodeLiterals(t *testing.T) {
 	})
 	t.Run("binary format", func(t *testing.T) {
 		code := "0b010"
-		got := ScanCode(code).String()
+		got := TokenizeCode(code).String()
 		expected := "2 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -74,7 +74,7 @@ func TestScanCodeLiterals(t *testing.T) {
 	})
 	t.Run("octal format", func(t *testing.T) {
 		code := "0o70"
-		got := ScanCode(code).String()
+		got := TokenizeCode(code).String()
 		expected := "56 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -82,7 +82,7 @@ func TestScanCodeLiterals(t *testing.T) {
 	})
 	t.Run("hex format", func(t *testing.T) {
 		code := "0x0A0"
-		got := ScanCode(code).String()
+		got := TokenizeCode(code).String()
 		expected := "160 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -113,7 +113,7 @@ func TestScanCodeLiterals(t *testing.T) {
 	// t.Run("large string with special escape", run(`"""\	ok\ """`, `"ok" `, tokens.STR)) // Nu 1.0
 }
 
-func TestScanCodeOperators(t *testing.T) {
+func TestTokenizeCodeOperators(t *testing.T) {
 	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
 		return func(t *testing.T) {
 			defer func() {
@@ -122,7 +122,7 @@ func TestScanCodeOperators(t *testing.T) {
 				}
 			}()
 
-			got := ScanCode(code)
+			got := TokenizeCode(code)
 			if len(got) != len(expectedTokens) {
 				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got)
 			}
@@ -150,7 +150,7 @@ func TestScanCodeOperators(t *testing.T) {
 	t.Run("period error", run("..+", tokens.ERR, tokens.PLUS))
 }
 
-func TestScanCodeText(t *testing.T) {
+func TestTokenizeCodeText(t *testing.T) {
 	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
 		return func(t *testing.T) {
 			defer func() {
@@ -159,7 +159,7 @@ func TestScanCodeText(t *testing.T) {
 				}
 			}()
 
-			got := ScanCode(code)
+			got := TokenizeCode(code)
 			if len(got) != len(expectedTokens) {
 				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got)
 			}

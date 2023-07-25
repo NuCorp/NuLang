@@ -6,34 +6,34 @@ import (
 	"unicode"
 )
 
-type scanChar struct {
+type tokenizeChar struct {
 	token TokenInfo
 
 	isEscaped       bool
 	isUnicodeEscape bool
 
-	scanInt *scanInt
+	tokenizeInt *tokenizeInt
 }
 
-func (s *scanChar) TokenInfo() TokenInfo {
+func (s *tokenizeChar) TokenInfo() TokenInfo {
 	return s.token
 }
 
-func (s *scanChar) validate(r rune, pos TokenPos) *scanChar {
+func (s *tokenizeChar) validate(r rune, pos TokenPos) Tokenizer {
 	s.token.rawValue += string(r)
 	s.token.to = pos.AtNextCol()
 	return s
 }
-func (s *scanChar) invalidate() Scanner {
+func (s *tokenizeChar) invalidate() Tokenizer {
 	return nil
 }
-func (s *scanChar) error(msg string) Scanner {
+func (s *tokenizeChar) error(msg string) Tokenizer {
 	s.token.token = tokens.ERR
 	fmt.Println(msg) // TODO in log
 	return nil
 }
 
-func (s *scanChar) firstCall(r rune, pos TokenPos) Scanner {
+func (s *tokenizeChar) firstCall(r rune, pos TokenPos) Tokenizer {
 	if r != '\'' {
 		panic("shouldn't be able to be here")
 	}
@@ -42,7 +42,7 @@ func (s *scanChar) firstCall(r rune, pos TokenPos) Scanner {
 
 	return s.validate(r, pos)
 }
-func (s *scanChar) inputValue(r rune, pos TokenPos) Scanner {
+func (s *tokenizeChar) inputValue(r rune, pos TokenPos) Tokenizer {
 	if r == '\\' {
 		s.isEscaped = true
 		return s.validate(r, pos)
@@ -50,11 +50,11 @@ func (s *scanChar) inputValue(r rune, pos TokenPos) Scanner {
 	s.token.value = r
 	return s.validate(r, pos)
 }
-func (s *scanChar) escape(r rune, pos TokenPos) Scanner {
+func (s *tokenizeChar) escape(r rune, pos TokenPos) Tokenizer {
 	if s.isUnicodeEscape {
 		return s.scanUnicode(r, pos)
 	}
-	if s.scanInt != nil {
+	if s.tokenizeInt != nil {
 		return s.scanAscii(r, pos)
 	}
 	if escapedValue, found := getSimpleEscapeChar(r); found {
@@ -70,40 +70,40 @@ func (s *scanChar) escape(r rune, pos TokenPos) Scanner {
 		s.isUnicodeEscape = true
 	default:
 		if unicode.IsDigit(r) {
-			s.scanInt = new(scanInt)
-			return s.scanAscii(r, pos) // remake the make scan but now scanInt is expected
+			s.tokenizeInt = new(tokenizeInt)
+			return s.scanAscii(r, pos) // remake the make scan but now tokenizeInt is expected
 		} else {
 			return s.error("message to do")
 		}
 	}
 	return s.validate(r, pos)
 }
-func (s *scanChar) scanAscii(r rune, pos TokenPos) Scanner {
-	if s.scanInt == nil {
+func (s *tokenizeChar) scanAscii(r rune, pos TokenPos) Tokenizer {
+	if s.tokenizeInt == nil {
 		panic("shouldn't be here")
 	}
-	next := s.scanInt.Scan(r, pos)
+	next := s.tokenizeInt.Tokenize(r, pos)
 	if next == nil {
-		if s.scanInt.value >= 0o10 {
+		if s.tokenizeInt.value >= 0o10 {
 			return s.error("escaped value can be from 0 to 255")
 		}
-		s.token.value = rune(s.scanInt.value)
+		s.token.value = rune(s.tokenizeInt.value)
 		s.isEscaped = false
-		return s.Scan(r, pos) // it is no more the integer part, we need to rescan that rune
+		return s.Tokenize(r, pos) // it is no more the integer part, we need to rescan that rune
 	}
-	if next != s.scanInt {
+	if next != s.tokenizeInt {
 		return s.error("floating point or fraction are not valid escaped value")
 	}
 	return s.validate(r, pos)
 }
-func (s *scanChar) scanUnicode(r rune, pos TokenPos) Scanner {
-	if r == '{' && s.scanInt == nil {
-		s.scanInt = new(scanInt)
+func (s *tokenizeChar) scanUnicode(r rune, pos TokenPos) Tokenizer {
+	if r == '{' && s.tokenizeInt == nil {
+		s.tokenizeInt = new(tokenizeInt)
 		return s.validate(r, pos)
 	}
-	if r == '}' && s.scanInt != nil {
+	if r == '}' && s.tokenizeInt != nil {
 		const UnicodeMaxValue = 0xFFF_FFF
-		if value, ok := s.scanInt.TokenInfo().Value().(Int); !ok {
+		if value, ok := s.tokenizeInt.TokenInfo().Value().(Int); !ok {
 			return s.error("missing unicode value") // TODO on log
 		} else if value > UnicodeMaxValue {
 			return s.error("unicode value are between 0x000_000 and 0xFFF_FFF") // TODO: log,
@@ -112,26 +112,26 @@ func (s *scanChar) scanUnicode(r rune, pos TokenPos) Scanner {
 		}
 		s.isEscaped = false
 		s.isUnicodeEscape = false
-		s.scanInt = nil
+		s.tokenizeInt = nil
 		return s.validate(r, pos)
 	}
-	if s.scanInt == nil {
+	if s.tokenizeInt == nil {
 		return s.error("missing '{' to make unicode")
 	}
-	next := s.scanInt.Scan(r, pos)
+	next := s.tokenizeInt.Tokenize(r, pos)
 	if next == nil {
 		return s.error("unterminated unicode escaped char; needed '}'")
 	}
 	return s.validate(r, pos)
 }
-func (s *scanChar) expectEnd(r rune, pos TokenPos) Scanner {
+func (s *tokenizeChar) expectEnd(r rune, pos TokenPos) Tokenizer {
 	if r != '\'' {
 		return s.error("char should be ended with '")
 	}
 	s.validate(r, pos)
 	return nil
 }
-func (s *scanChar) Scan(r rune, pos TokenPos) Scanner {
+func (s *tokenizeChar) Tokenize(r rune, pos TokenPos) Tokenizer {
 	if s.token.token == tokens.NoInit {
 		return s.firstCall(r, pos) // panic if r != '
 	}

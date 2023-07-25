@@ -5,27 +5,27 @@ import (
 	"strings"
 )
 
-type scanOperatorAndPunctuation struct {
+type tokenizeOperatorAndPunctuation struct {
 	token TokenInfo
 	init  bool
 }
 
-func (s *scanOperatorAndPunctuation) TokenInfo() TokenInfo {
-	return s.token
+func (t *tokenizeOperatorAndPunctuation) TokenInfo() TokenInfo {
+	return t.token
 }
-func (s *scanOperatorAndPunctuation) validate(r rune, pos TokenPos) Scanner {
-	s.token.rawValue += string(r)
-	s.token.to = pos.AtNextCol()
-	return s
+func (t *tokenizeOperatorAndPunctuation) validate(r rune, pos TokenPos) Tokenizer {
+	t.token.rawValue += string(r)
+	t.token.to = pos.AtNextCol()
+	return t
 }
-func (*scanOperatorAndPunctuation) invalidate() Scanner {
+func (*tokenizeOperatorAndPunctuation) invalidate() Tokenizer {
 	return nil
 }
 
-func (s *scanOperatorAndPunctuation) Scan(r rune, pos TokenPos) Scanner {
-	if !s.init {
-		s.init = true
-		s.token.from = pos
+func (t *tokenizeOperatorAndPunctuation) Tokenize(r rune, pos TokenPos) Tokenizer {
+	if !t.init {
+		t.init = true
+		t.token.from = pos
 	}
 
 	nextPossibleTokensFor := map[string][]struct {
@@ -80,17 +80,17 @@ func (s *scanOperatorAndPunctuation) Scan(r rune, pos TokenPos) Scanner {
 			{']', tokens.CBRAK},
 		},
 	}
-	if nexts, found := nextPossibleTokensFor[s.token.rawValue]; found {
+	if nexts, found := nextPossibleTokensFor[t.token.rawValue]; found {
 		for _, possibleNext := range nexts {
 			if possibleNext.For == r {
-				s.token.token = possibleNext.Token
-				if s.token.rawValue+string(r) != possibleNext.Token.String() {
-					s.token.token = tokens.ERR
-					s.token.value = UnexpectedCharacter(s.token, r, rune(strings.TrimPrefix(possibleNext.Token.String(), s.token.rawValue+string(r))[0]))
+				t.token.token = possibleNext.Token
+				if t.token.rawValue+string(r) != possibleNext.Token.String() {
+					t.token.token = tokens.ERR
+					t.token.value = UnexpectedCharacter(t.token, r, rune(strings.TrimPrefix(possibleNext.Token.String(), t.token.rawValue+string(r))[0]))
 				}
-				return s.validate(r, pos)
+				return t.validate(r, pos)
 			}
 		}
 	}
-	return s.invalidate()
+	return t.invalidate()
 }

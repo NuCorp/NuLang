@@ -7,14 +7,14 @@ import (
 	"unicode"
 )
 
-type Scanner interface {
-	Scan(r rune, pos TokenPos) Scanner
+type Tokenizer interface {
+	Tokenize(r rune, pos TokenPos) Tokenizer
 	TokenInfo() TokenInfo
 }
 
 type ignoringScanner struct{}
 
-func (s ignoringScanner) Scan(_ rune, pos TokenPos) Scanner {
+func (s ignoringScanner) Tokenize(_ rune, pos TokenPos) Tokenizer {
 	return nil
 }
 func (s ignoringScanner) TokenInfo() TokenInfo {
@@ -27,11 +27,11 @@ func (*errorScanner) Error() string {
 	return "unavailable scanner"
 }
 
-func innerScan(lines []string) CodeToken {
+func innerTokenizing(lines []string) CodeToken {
 	pos := TokenPos{}
 	tokenCode := CodeToken{}
 
-	scanner := Scanner(nil)
+	scanner := Tokenizer(nil)
 	for pos.line < len(lines) {
 		line := []rune(lines[pos.line] + "\n")
 		if pos.col >= len(line) {
@@ -51,7 +51,7 @@ func innerScan(lines []string) CodeToken {
 			}
 		}
 
-		nextScanner := scanner.Scan(r, pos)
+		nextScanner := scanner.Tokenize(r, pos)
 		tokenInfo := scanner.TokenInfo()
 		if tokenInfo.Token() == tokens.NoInit {
 			panic(fmt.Sprintf("Error for %T with first input: '%v'\n[CONTACT NU CORP]", scanner, string(r))) // TODO replace the [CONTACT NU CORP]
@@ -66,19 +66,19 @@ func innerScan(lines []string) CodeToken {
 	return tokenCode
 }
 
-func ScanCode(code string) CodeToken {
-	return innerScan(strings.Split(code, "\n"))
+func TokenizeCode(code string) CodeToken {
+	return innerTokenizing(strings.Split(code, "\n"))
 }
 
-type scanEndOfInstruction struct {
+type tokenizeEndOfInstruction struct {
 	token TokenInfo
 }
 
-func (s *scanEndOfInstruction) TokenInfo() TokenInfo {
+func (s *tokenizeEndOfInstruction) TokenInfo() TokenInfo {
 	return s.token
 }
 
-func (s *scanEndOfInstruction) Scan(r rune, pos TokenPos) Scanner {
+func (s *tokenizeEndOfInstruction) Tokenize(r rune, pos TokenPos) Tokenizer {
 	if s.token.token == tokens.NoInit {
 		s.token.token = tokens.SEMI
 	}
@@ -90,23 +90,23 @@ func (s *scanEndOfInstruction) Scan(r rune, pos TokenPos) Scanner {
 	return nil
 }
 
-func getScannerFor(r rune) Scanner {
+func getScannerFor(r rune) Tokenizer {
 	if unicode.IsDigit(r) {
-		return new(scanInt)
+		return new(tokenizeInt)
 	}
 	if unicode.IsLetter(r) || r == '_' {
-		return new(scanText)
+		return new(tokenizeText)
 	}
 	switch r {
 	case '\'':
-		return new(scanChar)
+		return new(tokenizeChar)
 	case '"':
-		return new(scanStr)
+		return new(tokenizeStr)
 	case '+', '-', '*', '/', '\\', '&', '|', '!', '~', '%', '?', '=', '>', '<',
 		':', '.', ',', '[', '{', '(', ')', '}', ']':
-		return new(scanOperatorAndPunctuation)
+		return new(tokenizeOperatorAndPunctuation)
 	case '\n', ';':
-		return new(scanEndOfInstruction)
+		return new(tokenizeEndOfInstruction)
 	case ' ', '\t':
 		return new(ignoringScanner)
 	}

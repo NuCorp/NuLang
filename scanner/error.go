@@ -8,7 +8,7 @@ type Error struct {
 }
 
 func (err Error) Error() string {
-	return fmt.Sprintf("[Scanner Error: wrong typo] at %v\n|", err.at)
+	return fmt.Sprintf("[Tokenizer Error: wrong typo] at %v\n|", err.at)
 }
 
 func UnexpectedCharacter(token TokenInfo, got rune, expected ...rune) error {

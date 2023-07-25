@@ -2,13 +2,13 @@ package scanner
 
 import "github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
 
-type scanText struct {
+type tokenizeText struct {
 	token TokenInfo
 }
 
-func (s *scanText) TokenInfo() TokenInfo { return s.token }
+func (s *tokenizeText) TokenInfo() TokenInfo { return s.token }
 
-func (s *scanText) completed() Scanner {
+func (s *tokenizeText) completed() Tokenizer {
 	s.token.token = tokens.GetKeywordForText(s.token.rawValue)
 	s.token.value = s.token.rawValue
 	if s.token.rawValue == "_" {
@@ -16,16 +16,16 @@ func (s *scanText) completed() Scanner {
 	}
 	return nil
 }
-func (s *scanText) validate(r rune, pos TokenPos) Scanner {
+func (s *tokenizeText) validate(r rune, pos TokenPos) Tokenizer {
 	s.token.rawValue += string(r)
 	s.token.to = pos.AtNextCol()
 	return s
 }
-func (*scanText) invalidate() Scanner {
+func (*tokenizeText) invalidate() Tokenizer {
 	return nil
 }
 
-func (s *scanText) Scan(r rune, pos TokenPos) Scanner {
+func (s *tokenizeText) Tokenize(r rune, pos TokenPos) Tokenizer {
 	if s.token.token == tokens.NoInit {
 		s.token.token = tokens.ERR
 		s.token.from = pos
