@@ -18,6 +18,20 @@ type Parser struct {
 
 type parsingFunction = func() ast.Ast
 
+func (p *Parser) canStartExpr() bool {
+	token := p.scanner.CurrentToken()
+	if token.IsLiteral() {
+		return true
+	}
+	switch token {
+	case tokens.OBRAC, tokens.OBRAK, tokens.OPAREN,
+		tokens.IDENT,
+		tokens.MINUS:
+		return true
+	}
+	return false
+}
+
 var conflictFor = map[tokens.Token]parsingFunction{}
 
 var binaryPriority = 0
@@ -124,19 +138,19 @@ func (p *Parser) parseInteractive() {
 			p.astFile = append(p.astFile, resolver())
 			continue
 		}
-		if true /* canStartExpr[p.scanner.CurrentToken()] != nil */ {
+		if p.canStartExpr() {
 			p.astFile = append(p.astFile, p.parseExpr())
 		}
 	}
 }
 
-func Parse(s scanner.Scanner, conf config.ToolInfo) []ast.Ast {
+func Parse(s scanner.Scanner, conf config.ToolInfo) ([]ast.Ast, map[scanner.TokenPos]error) {
 	p := Parser{}
 	p.scanner = &s
 	if conf.Kind() == config.Interactive {
 		p.parseInteractive()
-		return p.astFile
+		return p.astFile, p.errors
 	}
 
-	return nil
+	return nil, p.errors
 }
