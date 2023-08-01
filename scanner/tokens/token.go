@@ -69,15 +69,15 @@ const (
 	keywordEnd
 
 	operatorStart
+	PLUS_PLUS   // "++",
+	MINUS_MINUS // "--",
+
 	PLUS
 	MINUS
 	TIME
 	DIV
 	FRAC_DIV
 	MOD
-
-	PLUS_PLUS   // "++",
-	MINUS_MINUS // "--",
 
 	ASK   // "?",
 	ASKOR // "??",
@@ -147,6 +147,9 @@ func (t Token) IsLiteral() bool     { return literalStart < t && t < literalEnd 
 func (t Token) IsKeyword() bool     { return keywordStart < t && t < keywordEnd }
 func (t Token) IsOperator() bool    { return operatorStart < t && t < operatorEnd }
 func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctuationEnd }
+func (t Token) IsAssignation() bool {
+	return t >= ASSIGN && t <= OR_ASSIGN
+}
 
 func ForEach(forFunction func(token Token)) {
 	for _, token := range strKeyword {

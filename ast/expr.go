@@ -81,3 +81,18 @@ func (s *SingedValue) To() scanner.TokenPos {
 func (s *SingedValue) String() string {
 	return fmt.Sprintf("-%v", s.Value)
 }
+
+type Ident scanner.TokenInfo
+
+func (s *Ident) tokenInfo() scanner.TokenInfo {
+	return scanner.TokenInfo(*s)
+}
+func (s *Ident) From() scanner.TokenPos {
+	return s.tokenInfo().FromPos()
+}
+func (s *Ident) To() scanner.TokenPos {
+	return s.tokenInfo().ToPos()
+}
+func (s *Ident) String() string {
+	return s.tokenInfo().RawString()
+}

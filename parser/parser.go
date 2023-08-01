@@ -17,8 +17,6 @@ type Parser struct {
 	astFile []ast.Ast
 }
 
-type parsingFunction = func() ast.Ast
-
 func (p *Parser) canStartExpr() bool {
 	token := p.scanner.CurrentToken()
 	if token.IsLiteral() {
@@ -33,7 +31,19 @@ func (p *Parser) canStartExpr() bool {
 	return false
 }
 
-var conflictFor = map[tokens.Token]parsingFunction{}
+type conflictResolver = func(p *Parser) func() ast.Ast
+
+var conflictFor = map[tokens.Token]conflictResolver{
+	tokens.IDENT: func(p *Parser) func() ast.Ast {
+		s := *p.scanner
+		for s.CurrentToken() != tokens.EoI && s.CurrentToken() != tokens.EOF {
+			if s.ConsumeToken().IsAssignation() {
+				return nil // TODO
+			}
+		}
+		return p.parseExpr
+	},
+}
 
 var binaryPriority = 0
 
@@ -98,10 +108,15 @@ func (p *Parser) parseSingedExpr() ast.Ast {
 	if p.scanner.CurrentToken() != tokens.MINUS {
 		panic("shouldn't be here - invalid call")
 	}
-	return &ast.SingedValue{
+	signed := &ast.SingedValue{
 		Minus: p.scanner.ConsumeTokenInfo().FromPos(),
-		Value: p.parseSingedExpr(),
+		Value: p.parseSingleExpr(),
 	}
+	if signed, ok := signed.Value.(*ast.SingedValue); ok {
+		p.errors[signed.Minus] = fmt.Errorf("cannot signed ('-') a signed value (- -1 is not possible, try removing duplicate '-')")
+		return signed
+	}
+	return signed
 }
 
 func (p *Parser) parseSingleExpr() ast.Ast {
@@ -111,6 +126,9 @@ func (p *Parser) parseSingleExpr() ast.Ast {
 	switch p.scanner.CurrentToken() {
 	case tokens.MINUS:
 		return p.parseSingedExpr()
+	case tokens.IDENT:
+		ident := ast.Ident(p.scanner.ConsumeTokenInfo())
+		return &ident
 	}
 	p.errors[p.scanner.CurrentTokenInfo().FromPos()] = fmt.Errorf("unexpected token `%v` to start an expression", p.scanner.CurrentToken())
 	for p.scanner.ConsumeToken() != tokens.EoI {
@@ -152,7 +170,8 @@ func (p *Parser) parseLiteralValue() ast.Ast {
 func (p *Parser) parseInteractive() {
 	for p.scanner.CurrentToken() != tokens.EOF {
 		if resolver, found := conflictFor[p.scanner.CurrentToken()]; found {
-			p.astFile = append(p.astFile, resolver())
+			parser := resolver(p)
+			p.astFile = append(p.astFile, parser())
 			continue
 		}
 		if p.canStartExpr() {
@@ -163,6 +182,7 @@ func (p *Parser) parseInteractive() {
 
 func Parse(s scanner.Scanner, conf config.ToolInfo) ([]ast.Ast, map[scanner.TokenPos]error) {
 	p := Parser{}
+	p.errors = map[scanner.TokenPos]error{}
 	p.scanner = &s
 	if conf.Kind() == config.Interactive {
 		p.parseInteractive()
