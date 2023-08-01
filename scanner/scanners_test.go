@@ -15,7 +15,8 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 					t.Error(err)
 				}
 			}()
-			scanCode := TokenizeCode(code)
+			scanner := TokenizeCode(code)
+			scanCode := scanner.tokens
 			got := scanCode.String()
 			if got != expected {
 				t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -34,7 +35,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 
 	t.Run("simple integer 1", func(t *testing.T) {
 		code := "18"
-		got := TokenizeCode(code).String()
+		got := TokenizeCode(code).tokens.String()
 		expected := "18 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -42,7 +43,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 2", func(t *testing.T) {
 		code := "31"
-		got := TokenizeCode(code).String()
+		got := TokenizeCode(code).tokens.String()
 		expected := "31 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -50,7 +51,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 3", func(t *testing.T) {
 		code := "42"
-		got := TokenizeCode(code).String()
+		got := TokenizeCode(code).tokens.String()
 		expected := "42 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -58,7 +59,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 4", func(t *testing.T) {
 		code := "23"
-		got := TokenizeCode(code).String()
+		got := TokenizeCode(code).tokens.String()
 		expected := "23 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -66,7 +67,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("binary format", func(t *testing.T) {
 		code := "0b010"
-		got := TokenizeCode(code).String()
+		got := TokenizeCode(code).tokens.String()
 		expected := "2 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -74,7 +75,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("octal format", func(t *testing.T) {
 		code := "0o70"
-		got := TokenizeCode(code).String()
+		got := TokenizeCode(code).tokens.String()
 		expected := "56 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -82,7 +83,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("hex format", func(t *testing.T) {
 		code := "0x0A0"
-		got := TokenizeCode(code).String()
+		got := TokenizeCode(code).tokens.String()
 		expected := "160 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -122,7 +123,8 @@ func TestTokenizeCodeOperators(t *testing.T) {
 				}
 			}()
 
-			got := TokenizeCode(code)
+			scanner := TokenizeCode(code)
+			got := scanner.tokens
 			if len(got) != len(expectedTokens) {
 				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got)
 			}
@@ -159,7 +161,8 @@ func TestTokenizeCodeText(t *testing.T) {
 				}
 			}()
 
-			got := TokenizeCode(code)
+			scanner := TokenizeCode(code)
+			got := scanner.tokens
 			if len(got) != len(expectedTokens) {
 				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got)
 			}
