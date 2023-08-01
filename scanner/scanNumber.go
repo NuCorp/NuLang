@@ -45,7 +45,7 @@ func (t *tokenizeInt) Tokenize(r rune, pos TokenPos) (nextScanner Tokenizer) {
 	if t.token.rawValue == "" && !unicode.IsDigit(r) {
 		panic("shouldn't be here")
 	}
-	if container.Contains(getBaseDigitRepresentation(t.base), r) {
+	if container.Contains(r, getBaseDigitRepresentation(t.base)) {
 		t.value *= t.base
 		t.value += getValueForDigitRepresentation(r)
 		return t.validate(r, pos)

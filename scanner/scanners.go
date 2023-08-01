@@ -7,31 +7,59 @@ import (
 	"unicode"
 )
 
+type Scanner struct {
+	tokens  CodeToken
+	current int
+}
+
+func (s *Scanner) CurrentTokenInfo() TokenInfo {
+	if s.current == len(s.tokens) {
+		lastTok := s.tokens[s.current-1]
+		return TokenInfo{
+			token: tokens.EOF,
+			from:  lastTok.ToPos(),
+			to:    lastTok.ToPos(),
+		}
+	}
+	return s.tokens[s.current]
+}
+func (s *Scanner) CurrentToken() tokens.Token {
+	return s.CurrentTokenInfo().Token()
+}
+func (s *Scanner) CurrentPos() TokenPos {
+	return s.CurrentTokenInfo().FromPos()
+}
+func (s *Scanner) ConsumeTokenInfo() TokenInfo {
+	defer func() {
+		if s.current < len(s.tokens) {
+			s.current++
+		}
+	}()
+	return s.CurrentTokenInfo()
+}
+func (s *Scanner) ConsumeToken() tokens.Token {
+	return s.ConsumeTokenInfo().Token()
+}
+func (s *Scanner) LookUp(how int) CodeToken {
+	if s.current+how >= len(s.tokens) {
+		how = len(s.tokens) - s.current
+	}
+	return s.tokens[s.current : s.current+how]
+}
+func (s *Scanner) LookUpTokens(how int) []tokens.Token {
+	return s.LookUp(how).TokenList()
+}
+
 type Tokenizer interface {
 	Tokenize(r rune, pos TokenPos) Tokenizer
 	TokenInfo() TokenInfo
 }
 
-type ignoringScanner struct{}
-
-func (s ignoringScanner) Tokenize(_ rune, pos TokenPos) Tokenizer {
-	return nil
-}
-func (s ignoringScanner) TokenInfo() TokenInfo {
-	return TokenInfo{}
-}
-
-type errorScanner struct{ ignoringScanner }
-
-func (*errorScanner) Error() string {
-	return "unavailable scanner"
-}
-
 func innerTokenizing(lines []string) CodeToken {
-	pos := TokenPos{}
+	pos := InteractiveTokenPos()
 	tokenCode := CodeToken{}
 
-	scanner := Tokenizer(nil)
+	tokenizer := Tokenizer(nil)
 	for pos.line < len(lines) {
 		line := []rune(lines[pos.line] + "\n")
 		if pos.col >= len(line) {
@@ -40,34 +68,34 @@ func innerTokenizing(lines []string) CodeToken {
 			continue
 		}
 		r := line[pos.col]
-		if scanner == nil {
-			scanner = getScannerFor(r)
-			if err, isErr := scanner.(error); isErr {
-				panic(err) // TODO: in log
-			} else if _, toIgnore := scanner.(*ignoringScanner); toIgnore {
+		if tokenizer == nil {
+			tokenizer = getScannerFor(r)
+			if err, isErr := tokenizer.(error); isErr {
+				panic(err)
+			} else if _, toIgnore := tokenizer.(*ignoringScanner); toIgnore {
 				pos.col++
-				scanner = nil
+				tokenizer = nil
 				continue
 			}
 		}
 
-		nextScanner := scanner.Tokenize(r, pos)
-		tokenInfo := scanner.TokenInfo()
+		nextScanner := tokenizer.Tokenize(r, pos)
+		tokenInfo := tokenizer.TokenInfo()
 		if tokenInfo.Token() == tokens.NoInit {
-			panic(fmt.Sprintf("Error for %T with first input: '%v'\n[CONTACT NU CORP]", scanner, string(r))) // TODO replace the [CONTACT NU CORP]
+			panic(fmt.Sprintf("Error for %T with first input: '%v'\n[CONTACT NU CORP]", tokenizer, string(r))) // TODO replace the [CONTACT NU CORP]
 		}
 		if nextScanner == nil {
 			tokenCode = append(tokenCode, tokenInfo)
 		}
 		pos = tokenInfo.to
-		scanner = nextScanner
+		tokenizer = nextScanner
 	}
 
 	return tokenCode
 }
 
-func TokenizeCode(code string) CodeToken {
-	return innerTokenizing(strings.Split(code, "\n"))
+func TokenizeCode(code string) Scanner {
+	return Scanner{innerTokenizing(strings.Split(code, "\n")), 0}
 }
 
 type tokenizeEndOfInstruction struct {
@@ -111,4 +139,19 @@ func getScannerFor(r rune) Tokenizer {
 		return new(ignoringScanner)
 	}
 	return new(errorScanner)
+}
+
+type ignoringScanner struct{}
+
+func (s ignoringScanner) Tokenize(_ rune, _ TokenPos) Tokenizer {
+	return nil
+}
+func (s ignoringScanner) TokenInfo() TokenInfo {
+	return TokenInfo{}
+}
+
+type errorScanner struct{ ignoringScanner }
+
+func (*errorScanner) Error() string {
+	return "unavailable scanner"
 }

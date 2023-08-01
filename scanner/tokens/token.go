@@ -2,6 +2,8 @@ package tokens
 
 type Token int
 
+const EOF = Token(-1)
+
 const (
 	NoInit = Token(iota)
 	ERR    = Token(iota)
@@ -133,13 +135,15 @@ const (
 	punctuationEnd
 )
 
+const EoI = SEMI // EoI = End of Instruction
+
 func (t Token) String() string {
 	if str, found := tokenStr[t]; found {
 		return str
 	}
 	return "❏"
 }
-func (t Token) IsLiteral() bool     { return literalStart < t && t < literalEnd }
+func (t Token) IsLiteral() bool     { return literalStart < t && t < literalEnd || t == TRUE || t == FALSE }
 func (t Token) IsKeyword() bool     { return keywordStart < t && t < keywordEnd }
 func (t Token) IsOperator() bool    { return operatorStart < t && t < operatorEnd }
 func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctuationEnd }

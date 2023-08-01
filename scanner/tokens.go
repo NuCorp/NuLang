@@ -3,10 +3,12 @@ package scanner
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
 )
 
 type TokenPos struct {
+	fileRef   string
 	col, line int
 }
 
@@ -21,8 +23,13 @@ func (pos TokenPos) AtNextLine() TokenPos {
 	pos.line++
 	return pos
 }
+func (pos TokenPos) FileRef() string { return pos.fileRef }
+func (pos TokenPos) IsValid() bool   { return pos.fileRef != "" }
 func InvalidTokenPos() TokenPos {
-	return TokenPos{-1, -1}
+	return TokenPos{}
+}
+func InteractiveTokenPos() TokenPos {
+	return TokenPos{fileRef: config.InteractiveFile}
 }
 
 type TokenInfo struct {
