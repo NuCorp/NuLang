@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
@@ -93,12 +94,28 @@ func (p *Parser) parseBinop(left ast.Ast, operator tokens.Token) ast.Ast {
 	return root
 }
 
-func (p *Parser) parseSingleExpr() ast.Ast {
-	var expr ast.Ast
-	if p.scanner.CurrentToken().IsLiteral() {
-		expr = p.parseLiteralValue()
+func (p *Parser) parseSingedExpr() ast.Ast {
+	if p.scanner.CurrentToken() != tokens.MINUS {
+		panic("shouldn't be here - invalid call")
 	}
-	return expr
+	return &ast.SingedValue{
+		Minus: p.scanner.ConsumeTokenInfo().FromPos(),
+		Value: p.parseSingedExpr(),
+	}
+}
+
+func (p *Parser) parseSingleExpr() ast.Ast {
+	if p.scanner.CurrentToken().IsLiteral() {
+		return p.parseLiteralValue()
+	}
+	switch p.scanner.CurrentToken() {
+	case tokens.MINUS:
+		return p.parseSingedExpr()
+	}
+	p.errors[p.scanner.CurrentTokenInfo().FromPos()] = fmt.Errorf("unexpected token `%v` to start an expression", p.scanner.CurrentToken())
+	for p.scanner.ConsumeToken() != tokens.EoI {
+	}
+	return nil
 }
 
 func (p *Parser) parseExpr() ast.Ast {

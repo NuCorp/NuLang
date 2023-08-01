@@ -51,3 +51,33 @@ func MakeBinOpExpr(left, right Ast, operator tokens.Token, priority int) *BinOpE
 		Priority: priority,
 	}
 }
+
+type UnOpExpr struct {
+	Operator scanner.TokenInfo
+	Expr     Ast
+}
+
+func (u *UnOpExpr) From() scanner.TokenPos {
+	return u.Expr.From()
+}
+func (u *UnOpExpr) To() scanner.TokenPos {
+	return u.Operator.ToPos()
+}
+func (u *UnOpExpr) String() string {
+	return fmt.Sprintf("%v%v", u.Expr, u.Operator.Token())
+}
+
+type SingedValue struct {
+	Minus scanner.TokenPos
+	Value Ast
+}
+
+func (s *SingedValue) From() scanner.TokenPos {
+	return s.Minus
+}
+func (s *SingedValue) To() scanner.TokenPos {
+	return s.Value.To()
+}
+func (s *SingedValue) String() string {
+	return fmt.Sprintf("-%v", s.Value)
+}

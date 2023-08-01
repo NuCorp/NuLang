@@ -9,6 +9,6 @@ import (
 
 func main() {
 	code := scanner.TokenizeCode("1 + 2 * 3 * 4 + 5")
-	ast := parser.Parse(code, config.ToolInfo{}.WithKind(config.Interactive))
+	ast, _ := parser.Parse(code, config.ToolInfo{}.WithKind(config.Interactive))
 	fmt.Println(ast[0])
 }

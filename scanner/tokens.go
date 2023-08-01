@@ -25,6 +25,12 @@ func (pos TokenPos) AtNextLine() TokenPos {
 }
 func (pos TokenPos) FileRef() string { return pos.fileRef }
 func (pos TokenPos) IsValid() bool   { return pos.fileRef != "" }
+func (pos TokenPos) IsBefore(p TokenPos) bool {
+	return pos.line < p.line || (pos.line == p.line && pos.col < p.col)
+}
+func (pos TokenPos) IsAfter(p TokenPos) bool {
+	return pos.line > p.line || (pos.line == p.line && pos.col > p.col)
+}
 func InvalidTokenPos() TokenPos {
 	return TokenPos{}
 }
