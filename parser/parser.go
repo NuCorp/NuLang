@@ -76,7 +76,7 @@ func (p *Parser) parseSimpleVars() []ast.VarDef {
 		for i := range vars {
 			vars[i].Typ = varElem.Typ
 		}
-		return vars
+		return append(vars, varElem)
 	}
 	panic("unreachable")
 }
