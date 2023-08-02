@@ -125,8 +125,8 @@ func TestTokenizeCodeOperators(t *testing.T) {
 
 			scanner := TokenizeCode(code)
 			got := scanner.tokens
-			if len(got) != len(expectedTokens) {
-				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got)
+			if len(got.TokenList()) != len(expectedTokens) {
+				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got.TokenList()), expectedTokens, got.TokenList())
 			}
 			for idx, expectedToken := range expectedTokens {
 				if expectedToken != got[idx].Token() {
@@ -163,8 +163,8 @@ func TestTokenizeCodeText(t *testing.T) {
 
 			scanner := TokenizeCode(code)
 			got := scanner.tokens
-			if len(got) != len(expectedTokens) {
-				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got)
+			if len(got.TokenList()) != len(expectedTokens) {
+				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got.TokenList()), expectedTokens, got.TokenList())
 			}
 			for idx, expectedToken := range expectedTokens {
 				if expectedToken != got[idx].Token() {

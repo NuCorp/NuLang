@@ -107,14 +107,17 @@ func (s *tokenizeEndOfInstruction) TokenInfo() TokenInfo {
 }
 
 func (s *tokenizeEndOfInstruction) Tokenize(r rune, pos TokenPos) Tokenizer {
-	if s.token.token == tokens.NoInit {
+	s.token.from = pos
+	s.token.to = pos
+	if r == '\n' {
+		s.token.token = tokens.NL
+	} else if r == ';' {
 		s.token.token = tokens.SEMI
+	} else {
+		return nil
 	}
-	if r == '\n' || r == ';' {
-		s.token.rawValue += string(r)
-		s.token.to = pos.AtNextCol()
-		return s
-	}
+	s.token.rawValue += string(r)
+	s.token.to = pos.AtNextCol()
 	return nil
 }
 

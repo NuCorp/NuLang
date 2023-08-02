@@ -133,9 +133,9 @@ const (
 	CBRAK  // "]",
 	CPAREN // ")",
 	punctuationEnd
-)
 
-const EoI = SEMI // EoI = End of Instruction
+	NL // new line
+)
 
 func (t Token) String() string {
 	if str, found := tokenStr[t]; found {
@@ -150,6 +150,8 @@ func (t Token) IsPunctuation() bool { return punctuationStart < t && t < punctua
 func (t Token) IsAssignation() bool {
 	return t >= ASSIGN && t <= OR_ASSIGN
 }
+func (t Token) IsEoI() bool { return t == NL || t == SEMI }
+func EoI() []Token          { return []Token{NL, SEMI} }
 
 func ForEach(forFunction func(token Token)) {
 	for _, token := range strKeyword {
@@ -296,4 +298,6 @@ var tokenStr = map[Token]string{
 	CBRAC:  "}",
 	CBRAK:  "]",
 	CPAREN: ")",
+
+	NL: "\n",
 }

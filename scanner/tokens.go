@@ -85,14 +85,20 @@ type CodeToken []TokenInfo
 
 func (code CodeToken) String() string {
 	str := ""
-	for _, tok := range code {
+	for idx, tok := range code {
+		if idx == len(code)-1 && tok.token.IsEoI() {
+			break
+		}
 		str += tok.PrintableString() + " "
 	}
 	return str
 }
 func (code CodeToken) TokenList() []tokens.Token {
 	toks := make([]tokens.Token, 0, len(code))
-	for _, tokenInfo := range code {
+	for idx, tokenInfo := range code {
+		if idx == len(code)-1 && tokenInfo.token.IsEoI() {
+			break
+		}
 		toks = append(toks, tokenInfo.Token())
 	}
 	return toks

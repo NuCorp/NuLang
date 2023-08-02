@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils"
 )
 
 type Parser struct {
@@ -17,26 +17,12 @@ type Parser struct {
 	astFile []ast.Ast
 }
 
-func (p *Parser) canStartExpr() bool {
-	token := p.scanner.CurrentToken()
-	if token.IsLiteral() {
-		return true
-	}
-	switch token {
-	case tokens.OBRAC, tokens.OBRAK, tokens.OPAREN,
-		tokens.IDENT,
-		tokens.MINUS:
-		return true
-	}
-	return false
-}
-
 type conflictResolver = func(p *Parser) func() ast.Ast
 
 var conflictFor = map[tokens.Token]conflictResolver{
 	tokens.IDENT: func(p *Parser) func() ast.Ast {
 		s := *p.scanner
-		for s.CurrentToken() != tokens.EoI && s.CurrentToken() != tokens.EOF {
+		for !s.CurrentToken().IsEoI() && s.CurrentToken() != tokens.EOF {
 			if s.ConsumeToken().IsAssignation() {
 				return nil // TODO
 			}
@@ -45,126 +31,73 @@ var conflictFor = map[tokens.Token]conflictResolver{
 	},
 }
 
-var binaryPriority = 0
-
-func nextPriority() int {
-	binaryPriority++
-	return binaryPriority
-}
-func samePriority() int {
-	return binaryPriority
-}
-
-var priorityForBinOp = map[tokens.Token]int{
-	tokens.PLUS:  samePriority(),
-	tokens.MINUS: samePriority(),
-
-	tokens.TIME: nextPriority(),
-	tokens.DIV:  samePriority(),
-	tokens.MOD:  samePriority(),
-
-	tokens.FRAC_DIV: nextPriority(),
-}
-
-func (p *Parser) parseBinop(left ast.Ast, operator tokens.Token) ast.Ast {
-	right := p.parseSingleExpr()
-	priority, found := priorityForBinOp[operator]
-	if !found {
-		panic("shouldn't be here")
-	}
-	root, ok := left.(*ast.BinOpExpr)
-	if !ok {
-		return ast.MakeBinOpExpr(left, right, operator, priority)
-	}
-
-	binop := root
-
-	for binop.Priority < priority {
-		if binopRight, ok := binop.Right.(*ast.BinOpExpr); ok {
-			binop = binopRight
-		} else {
-			newBinop := &ast.BinOpExpr{
-				Left:     binop.Right,
-				Right:    right,
-				Operator: operator,
-				Priority: priority,
-			}
-			binop.Right = newBinop
-			return root
-		}
-	}
-	temp_binop := *binop
-	*binop = ast.BinOpExpr{
-		Left:     &temp_binop,
-		Right:    right,
-		Operator: operator,
-		Priority: priority,
-	}
-
-	return root
-}
-
-func (p *Parser) parseSingedExpr() ast.Ast {
-	if p.scanner.CurrentToken() != tokens.MINUS {
-		panic("shouldn't be here - invalid call")
-	}
-	signed := &ast.SingedValue{
-		Minus: p.scanner.ConsumeTokenInfo().FromPos(),
-		Value: p.parseSingleExpr(),
-	}
-	if signed, ok := signed.Value.(*ast.SingedValue); ok {
-		p.errors[signed.Minus] = fmt.Errorf("cannot signed ('-') a signed value (- -1 is not possible, try removing duplicate '-')")
-		return signed
-	}
-	return signed
-}
-
-func (p *Parser) parseSingleExpr() ast.Ast {
-	if p.scanner.CurrentToken().IsLiteral() {
-		return p.parseLiteralValue()
-	}
-	switch p.scanner.CurrentToken() {
-	case tokens.MINUS:
-		return p.parseSingedExpr()
-	case tokens.IDENT:
-		ident := ast.Ident(p.scanner.ConsumeTokenInfo())
-		return &ident
-	}
-	p.errors[p.scanner.CurrentTokenInfo().FromPos()] = fmt.Errorf("unexpected token `%v` to start an expression", p.scanner.CurrentToken())
-	for p.scanner.ConsumeToken() != tokens.EoI {
-	}
+func (p *Parser) parseType() ast.Ast {
 	return nil
 }
 
-func (p *Parser) parseExpr() ast.Ast {
-	expr := p.parseSingleExpr()
-	for p.scanner.CurrentToken() != tokens.EoI && p.scanner.CurrentToken() != tokens.EOF {
-		switch p.scanner.CurrentToken() {
-		case tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.MOD, tokens.FRAC_DIV:
-			expr = p.parseBinop(expr, p.scanner.ConsumeToken())
+func (p *Parser) parseSimpleVars() []ast.VarDef {
+	var vars []ast.VarDef
+	for p.scanner.CurrentToken() != tokens.EOF {
+		for p.scanner.CurrentTokenInfo().RawString() == "\n" {
+			p.scanner.ConsumeToken()
 		}
+		if p.scanner.ConsumeToken() != tokens.IDENT {
+			p.errors[p.scanner.ConsumeTokenInfo().FromPos()] = fmt.Errorf("unexpected token")
+			p.skipTo(append(tokens.EoI(), tokens.COMA, tokens.EOF)...)
+			return nil // TODO: return an AstError ?
+		}
+		varElem := ast.VarDef{}
+		varElem.Name = ast.MakeValue[string](p.scanner.ConsumeTokenInfo())
+		if p.scanner.CurrentToken() == tokens.COMA { // IDENT `,` IDENT --> multiple variable of the same type (without value)
+			p.scanner.ConsumeToken()
+			vars = append(vars, varElem)
+			continue
+		}
+	assignment:
+		if p.scanner.CurrentToken() == tokens.ASSIGN { // IDENT `=` Expr --> assignment declaration (it also might be: IDENT Type `=` Expr)
+			if len(vars) != 0 {
+				p.errors[p.scanner.CurrentPos()] = fmt.Errorf("unexpected '='. Cannot assign multiple variable with 1 '=', may be you wanted to use order binding")
+				p.skipTo(append(tokens.EoI(), tokens.COMA, tokens.EOF)...)
+				return nil
+			}
+			varElem.Assign = p.scanner.ConsumeToken()
+			varElem.Value = p.parseExpr()
+			return []ast.VarDef{varElem}
+		}
+
+		// IDENT ?? --> the '??' corresponds to the type
+		// It may be IDENT Type `=` Expr (meaning it has only one varElem) or IDENT Type `,` (and then 'Type' apply to all previous varElem)
+		// then return
+		varElem.Typ = p.parseType()
+		if p.scanner.CurrentToken() == tokens.ASSIGN {
+			goto assignment // first case: IDENT Type `=` Expr --> Type is only for the one VarElem
+		}
+		// second case: IDENT (`,` IDENT)* Type --> Type apply to all previous VarElem
+		for i := range vars {
+			vars[i].Typ = varElem.Typ
+		}
+		return vars
 	}
-	return expr
+	panic("unreachable")
 }
 
-func (p *Parser) parseLiteralValue() ast.Ast {
-	scan := p.scanner
-	switch scan.CurrentToken() {
-	case tokens.INT:
-		return ast.MakeLiteralExpr[uint](scan.ConsumeTokenInfo())
-	case tokens.STR:
-		return ast.MakeLiteralExpr[string](scan.ConsumeTokenInfo())
-	case tokens.FLOAT:
-		return ast.MakeLiteralExpr[float64](scan.ConsumeTokenInfo())
-	case tokens.FRACTION:
-		return ast.MakeLiteralExpr[utils.Fraction](scan.ConsumeTokenInfo())
-	case tokens.CHAR:
-		return ast.MakeLiteralExpr[rune](scan.ConsumeTokenInfo())
-	case tokens.TRUE, tokens.FALSE:
-		return ast.MakeLiteralExpr[bool](scan.ConsumeTokenInfo())
-	default:
-		panic("invalid call - shouldn't be here") // unreachable
+func (p *Parser) parseVars(kw scanner.TokenInfo) ast.Ast {
+	vars := &ast.VarList{Keyword: kw.FromPos()}
+	switch p.scanner.CurrentToken() {
+	case tokens.OBRAK:
+	case tokens.OBRAC:
+	case tokens.IDENT:
+
 	}
+	return vars
+}
+
+func (p *Parser) parseDef() ast.Ast {
+	switch p.scanner.CurrentToken() {
+	case tokens.VAR:
+		return p.parseVars(p.scanner.ConsumeTokenInfo())
+	}
+	return nil
 }
 
 func (p *Parser) parseInteractive() {
@@ -176,7 +109,17 @@ func (p *Parser) parseInteractive() {
 		}
 		if p.canStartExpr() {
 			p.astFile = append(p.astFile, p.parseExpr())
+			continue
 		}
+		if p.scanner.CurrentToken() == tokens.VAR {
+			p.astFile = append(p.astFile, p.parseDef())
+			continue
+		}
+	}
+}
+
+func (p *Parser) skipTo(tokenOpt ...tokens.Token) {
+	for !container.Contains(p.scanner.ConsumeToken(), tokenOpt) {
 	}
 }
 
