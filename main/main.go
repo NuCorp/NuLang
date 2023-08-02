@@ -36,9 +36,7 @@ func executor(elem ast.Ast) int64 {
 
 func main() {
 	code := scanner.TokenizeCode(`
-var a = - 1 + 4 + 8 / 2,
-b = 3\4, c = 2.(34), 
-d = a.b."b"`[1:])
+var a int = 42, b, c pkg.Float`[1:])
 	ast, errs := parser.Parse(code, config.ToolInfo{}.WithKind(config.Interactive))
 	fmt.Println(ast[0])
 	//fmt.Printf(" = %v", executor(ast[0]))
