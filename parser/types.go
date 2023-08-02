@@ -40,7 +40,10 @@ func (p *Parser) parseLStructType(opening scanner.TokenInfo) ast.LStructType {
 	}
 	if p.scanner.CurrentToken() != tokens.CBRAC {
 		p.errors[p.scanner.CurrentPos()] = fmt.Errorf("missing `}` to close the structure")
+		lstruct.Ending = p.scanner.CurrentPos()
+		return lstruct
 	}
+	lstruct.Ending = p.scanner.ConsumeTokenInfo().ToPos()
 	return lstruct
 }
 
@@ -60,7 +63,7 @@ func (p *Parser) parseType() ast.Ast {
 		return typ
 	case tokens.TYPEOF:
 	case tokens.OBRAC, tokens.STRUCT:
-
+		return p.parseLStructType(p.scanner.ConsumeTokenInfo())
 	case tokens.OBRAK:
 	case tokens.OPAREN:
 
