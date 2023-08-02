@@ -3,19 +3,23 @@ package parser
 import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
 )
 
-func (p *Parser) parseLStructType(opening scanner.TokenInfo) ast.LStructType {
+func (p *Parser) parseLStructType(opening scanner.TokenInfo) ast.Ast {
 	lstruct := ast.LStructType{}
 	lstruct.Opening = opening.FromPos()
 	hasErr := false
 	if hasErr = p.scanner.CurrentToken() != tokens.OBRAC; hasErr {
 		p.errors[p.scanner.CurrentPos()] = fmt.Errorf("expected `{` to start the lambda structure")
 		// we are trying to parse it anyway. It may be just a forgot
+	} else {
+		p.scanner.ConsumeToken()
 	}
 	for p.scanner.CurrentToken() != tokens.CBRAC && p.scanner.CurrentToken() != tokens.EOF {
+		p.skipTokens(tokens.EoI()...)
 		getter := p.scanner.CurrentToken() == tokens.GET
 		if p.scanner.CurrentToken() == tokens.GET {
 			p.scanner.ConsumeToken()
@@ -30,20 +34,27 @@ func (p *Parser) parseLStructType(opening scanner.TokenInfo) ast.LStructType {
 		for range attributes {
 			lstruct.Getter = append(lstruct.Getter, getter)
 		}
-		if p.scanner.CurrentToken() == tokens.COLON {
+		if p.scanner.CurrentToken() == tokens.COMA {
 			p.scanner.ConsumeToken()
 			continue
 		}
-		for p.scanner.CurrentToken().IsEoI() {
-			p.scanner.ConsumeToken()
-		}
+		p.skipTokens(tokens.EoI()...)
 	}
+
 	if p.scanner.CurrentToken() != tokens.CBRAC {
 		p.errors[p.scanner.CurrentPos()] = fmt.Errorf("missing `}` to close the structure")
 		lstruct.Ending = p.scanner.CurrentPos()
-		return lstruct
+		return nil // TODO: ERROR: return ast.Error ?
 	}
 	lstruct.Ending = p.scanner.ConsumeTokenInfo().ToPos()
+	if opening.Token() == tokens.STRUCT {
+		return lstruct
+	}
+	if p.scanner.CurrentToken() != tokens.CBRAC {
+		p.errors[p.scanner.CurrentPos()] = fmt.Errorf("missing `}` to close the `{{` structure opening")
+	} else {
+		lstruct.Ending = p.scanner.ConsumeTokenInfo().ToPos()
+	}
 	return lstruct
 }
 
@@ -72,4 +83,14 @@ func (p *Parser) parseType() ast.Ast {
 	case tokens.FUNC:
 	}
 	return nil
+}
+
+func (p *Parser) canStartType() bool {
+	return container.Contains(p.scanner.CurrentToken(), []tokens.Token{
+		tokens.IDENT,
+		tokens.TYPEOF,
+		tokens.OBRAC, tokens.STRUCT,
+		tokens.OBRAK, tokens.OPAREN,
+		tokens.INTERFACE, tokens.ENUM, tokens.FUNC,
+	})
 }

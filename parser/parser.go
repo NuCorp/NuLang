@@ -156,6 +156,12 @@ func (p *Parser) skipTo(tokenOpt ...tokens.Token) {
 	}
 }
 
+func (p *Parser) skipTokens(tokenList ...tokens.Token) {
+	for container.Contains(p.scanner.CurrentToken(), tokenList) {
+		p.scanner.ConsumeToken()
+	}
+}
+
 func Parse(s scanner.Scanner, conf config.ToolInfo) ([]ast.Ast, map[scanner.TokenPos]error) {
 	p := Parser{}
 	p.errors = map[scanner.TokenPos]error{}
