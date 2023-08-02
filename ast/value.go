@@ -7,6 +7,11 @@ type Value[T comparable] struct {
 	Value T
 }
 
+func MakeZeroValue[T comparable](from scanner.TokenInfo) Value[T] {
+	return Value[T]{
+		from: from,
+	}
+}
 func MakeValue[T comparable](from scanner.TokenInfo) Value[T] {
 	return Value[T]{
 		from:  from,

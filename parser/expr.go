@@ -97,10 +97,8 @@ func (p *Parser) parseSingedExpr() ast.Ast {
 
 func (p *Parser) parseDotExpr(left ast.Ast, dot tokens.Token) ast.Ast {
 	dotExpr := &ast.DottedExpr{
-		DottedElem: ast.DottedElem{
-			Left: left,
-			Dot:  dot,
-		},
+		Left: left,
+		Dot:  dot,
 	}
 	dotExpr.RawString = p.scanner.CurrentToken() == tokens.STR
 	if p.scanner.CurrentToken() == tokens.IDENT {
