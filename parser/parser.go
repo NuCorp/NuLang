@@ -114,9 +114,7 @@ varElemLoop:
 				break varElemLoop
 			}
 			p.scanner.ConsumeToken()
-			if p.scanner.CurrentToken() == tokens.NL {
-				p.scanner.ConsumeToken()
-			}
+			p.skipTokens(tokens.NL)
 		}
 	}
 	return vars
@@ -145,9 +143,7 @@ func (p *Parser) parseInteractive() {
 			p.astFile = append(p.astFile, p.parseDef())
 			continue
 		}
-		for p.scanner.CurrentToken().IsEoI() {
-			p.scanner.ConsumeToken()
-		}
+		p.skipTokens(tokens.EoI()...)
 	}
 }
 

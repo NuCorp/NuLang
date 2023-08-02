@@ -41,7 +41,9 @@ c struct
 a int}}
 var b = 18`[1:])
 	ast, errs := parser.Parse(code, config.ToolInfo{}.WithKind(config.Interactive))
-	fmt.Println(ast[0])
+	for _, elem := range ast {
+		fmt.Println(elem)
+	}
 	//fmt.Printf(" = %v", executor(ast[0]))
 	for pos, err := range errs {
 		fmt.Printf("* error at (%v)\n|\t%v\n", pos, err)
