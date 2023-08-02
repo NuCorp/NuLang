@@ -35,10 +35,13 @@ func executor(elem ast.Ast) int64 {
 }
 
 func main() {
-	code := scanner.TokenizeCode("- 1 + 4 + 8 / 2")
+	code := scanner.TokenizeCode(`
+var a = - 1 + 4 + 8 / 2,
+b = 3\\4, c = 2.(34), 
+d = '*'`[1:])
 	ast, errs := parser.Parse(code, config.ToolInfo{}.WithKind(config.Interactive))
 	fmt.Println(ast[0])
-	fmt.Printf(" = %v", executor(ast[0]))
+	//fmt.Printf(" = %v", executor(ast[0]))
 	for pos, err := range errs {
 		fmt.Printf("* error at (%v)\n|\t%v\n", pos, err)
 	}

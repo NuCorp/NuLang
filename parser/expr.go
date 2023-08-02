@@ -117,6 +117,8 @@ func (p *Parser) parseExpr() ast.Ast {
 		switch p.scanner.CurrentToken() {
 		case tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.MOD, tokens.FRAC_DIV:
 			expr = p.parseBinop(expr, p.scanner.ConsumeToken())
+		default:
+			return expr
 		}
 	}
 	return expr

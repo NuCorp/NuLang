@@ -24,7 +24,11 @@ var conflictFor = map[tokens.Token]conflictResolver{
 		s := *p.scanner
 		for !s.CurrentToken().IsEoI() && s.CurrentToken() != tokens.EOF {
 			if s.ConsumeToken().IsAssignation() {
-				return nil // TODO
+				return func() ast.Ast {
+					p.skipTo(tokens.EOF)
+					p.errors[p.scanner.CurrentPos()] = fmt.Errorf("conflict not handle yet")
+					return nil
+				} // TODO
 			}
 		}
 		return p.parseExpr
@@ -41,7 +45,7 @@ func (p *Parser) parseSimpleVars() []ast.VarDef {
 		for p.scanner.CurrentTokenInfo().RawString() == "\n" {
 			p.scanner.ConsumeToken()
 		}
-		if p.scanner.ConsumeToken() != tokens.IDENT {
+		if p.scanner.CurrentToken() != tokens.IDENT {
 			p.errors[p.scanner.ConsumeTokenInfo().FromPos()] = fmt.Errorf("unexpected token")
 			p.skipTo(append(tokens.EoI(), tokens.COMA, tokens.EOF)...)
 			return nil // TODO: return an AstError ?
@@ -83,11 +87,21 @@ func (p *Parser) parseSimpleVars() []ast.VarDef {
 
 func (p *Parser) parseVars(kw scanner.TokenInfo) ast.Ast {
 	vars := &ast.VarList{Keyword: kw.FromPos()}
-	switch p.scanner.CurrentToken() {
-	case tokens.OBRAK:
-	case tokens.OBRAC:
-	case tokens.IDENT:
-
+varElemLoop:
+	for !p.scanner.CurrentToken().IsEoI() && p.scanner.CurrentToken() != tokens.EOF {
+		switch p.scanner.CurrentToken() {
+		case tokens.OBRAK:
+		case tokens.OBRAC:
+		case tokens.IDENT:
+			vars.AddVars(p.parseSimpleVars()...)
+			if p.scanner.CurrentToken() != tokens.COMA {
+				break varElemLoop
+			}
+			p.scanner.ConsumeToken()
+			if p.scanner.CurrentToken() == tokens.NL {
+				p.scanner.ConsumeToken()
+			}
+		}
 	}
 	return vars
 }
@@ -114,6 +128,9 @@ func (p *Parser) parseInteractive() {
 		if p.scanner.CurrentToken() == tokens.VAR {
 			p.astFile = append(p.astFile, p.parseDef())
 			continue
+		}
+		for p.scanner.CurrentToken().IsEoI() {
+			p.scanner.ConsumeToken()
 		}
 	}
 }
