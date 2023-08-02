@@ -197,3 +197,27 @@ func TestTokenizeCodeText(t *testing.T) {
 		}
 	})
 }
+
+func TestTokenizeCode(t *testing.T) {
+	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
+		return func(t *testing.T) {
+			defer func() {
+				if err := recover(); err != nil {
+					t.Error(err)
+				}
+			}()
+
+			scanner := TokenizeCode(code)
+			got := scanner.tokens
+			if len(got.TokenList()) != len(expectedTokens) {
+				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got.TokenList()), expectedTokens, got.TokenList())
+			}
+			for idx, expectedToken := range expectedTokens {
+				if expectedToken != got[idx].Token() {
+					t.Errorf("wrong token at %v (n°%v) expected: %v but got %v", got[idx].FromPos(), idx+1, expectedToken, got[idx].Token())
+				}
+			}
+		}
+	}
+	t.Run("with dot", run("a.b", tokens.IDENT, tokens.DOT, tokens.IDENT))
+}

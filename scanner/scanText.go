@@ -1,6 +1,9 @@
 package scanner
 
-import "github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+import (
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"unicode"
+)
 
 type tokenizeText struct {
 	token TokenInfo
@@ -31,7 +34,7 @@ func (s *tokenizeText) Tokenize(r rune, pos TokenPos) Tokenizer {
 		s.token.from = pos
 		return s.validate(r, pos)
 	}
-	if r == ' ' || r == '\n' {
+	if !unicode.IsLetter(r) && r != '_' {
 		return s.completed()
 	}
 	return s.validate(r, pos)

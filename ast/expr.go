@@ -96,3 +96,27 @@ func (s *Ident) To() scanner.TokenPos {
 func (s *Ident) String() string {
 	return s.tokenInfo().RawString()
 }
+
+type DottedExpr struct {
+	Left      Ast
+	Dot       tokens.Token
+	Right     Value[string] // IDENT or STR (constexpr STR)
+	RawString bool
+}
+
+func (d *DottedExpr) From() scanner.TokenPos {
+	return d.Left.From()
+}
+func (d *DottedExpr) To() scanner.TokenPos {
+	return d.Left.To()
+}
+func (d *DottedExpr) String() string {
+	right := "◽"
+	if d.Dot != tokens.NoInit {
+		right = d.Right.Value
+	}
+	if d.RawString {
+		right = "\"" + right + "\""
+	}
+	return fmt.Sprintf("%v.%v", d.Left, right)
+}

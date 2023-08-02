@@ -95,6 +95,27 @@ func (p *Parser) parseSingedExpr() ast.Ast {
 	return signed
 }
 
+func (p *Parser) parseDotExpr(left ast.Ast, dot tokens.Token) ast.Ast {
+	dotExpr := &ast.DottedExpr{
+		Left: left,
+		Dot:  dot,
+	}
+	dotExpr.RawString = p.scanner.CurrentToken() == tokens.STR
+	if p.scanner.CurrentToken() == tokens.IDENT {
+		dotExpr.Right = ast.MakeValue[string](p.scanner.ConsumeTokenInfo())
+		return dotExpr
+	}
+	if p.scanner.CurrentToken() == tokens.STR {
+		// if _, ok := p.scanner.CurrentTokenInfo().Value().(utils.ComputedString); ok { error }
+		dotExpr.Right = ast.MakeValue[string](p.scanner.ConsumeTokenInfo())
+		return dotExpr
+	}
+	dotExpr.Dot = tokens.NoInit
+	p.errors[p.scanner.CurrentPos()] = fmt.Errorf("unexpected token `%v` after the '.' (accept only constexpr string or identifier)", p.scanner.CurrentToken())
+	p.skipTo(tokens.EoI()...)
+	return dotExpr
+}
+
 func (p *Parser) parseSingleExpr() ast.Ast {
 	if p.scanner.CurrentToken().IsLiteral() {
 		return p.parseLiteralValue()
@@ -117,6 +138,8 @@ func (p *Parser) parseExpr() ast.Ast {
 		switch p.scanner.CurrentToken() {
 		case tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.MOD, tokens.FRAC_DIV:
 			expr = p.parseBinop(expr, p.scanner.ConsumeToken())
+		case tokens.DOT:
+			expr = p.parseDotExpr(expr, p.scanner.ConsumeToken())
 		default:
 			return expr
 		}
