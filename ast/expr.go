@@ -84,32 +84,44 @@ func (s *SingedValue) String() string {
 
 type Ident scanner.TokenInfo
 
-func (s *Ident) tokenInfo() scanner.TokenInfo {
-	return scanner.TokenInfo(*s)
+func (s Ident) tokenInfo() scanner.TokenInfo {
+	return scanner.TokenInfo(s)
 }
-func (s *Ident) From() scanner.TokenPos {
+func (s Ident) From() scanner.TokenPos {
 	return s.tokenInfo().FromPos()
 }
-func (s *Ident) To() scanner.TokenPos {
+func (s Ident) To() scanner.TokenPos {
 	return s.tokenInfo().ToPos()
 }
-func (s *Ident) String() string {
+func (s Ident) String() string {
 	return s.tokenInfo().RawString()
 }
 
+type DottedElem struct {
+	Left  Ast
+	Dot   tokens.Token
+	Right Value[string] // IDENT or STR (constexpr STR)
+}
+
+func (d *DottedElem) From() scanner.TokenPos {
+	return d.Left.From()
+}
+func (d *DottedElem) To() scanner.TokenPos {
+	return d.Left.To()
+}
+func (d *DottedElem) String() string {
+	right := "◽"
+	if d.Dot != tokens.NoInit {
+		right = d.Right.Value
+	}
+	return fmt.Sprintf("%v.%v", d.Left, right)
+}
+
 type DottedExpr struct {
-	Left      Ast
-	Dot       tokens.Token
-	Right     Value[string] // IDENT or STR (constexpr STR)
+	DottedElem
 	RawString bool
 }
 
-func (d *DottedExpr) From() scanner.TokenPos {
-	return d.Left.From()
-}
-func (d *DottedExpr) To() scanner.TokenPos {
-	return d.Left.To()
-}
 func (d *DottedExpr) String() string {
 	right := "◽"
 	if d.Dot != tokens.NoInit {

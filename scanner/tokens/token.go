@@ -39,6 +39,7 @@ const (
 	OPERATOR  // operator
 	WITH      // with
 	ALIAS     // alias
+	TYPEOF
 
 	VAR   // var
 	CONST // const
@@ -211,6 +212,7 @@ var tokenStr = map[Token]string{
 	OPERATOR:  "operator",
 	WITH:      "with",
 	ALIAS:     "alias",
+	TYPEOF:    "typeof",
 
 	VAR:   "var",
 	CONST: "const",
