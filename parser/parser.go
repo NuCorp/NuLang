@@ -85,6 +85,26 @@ func (p *Parser) parseSimpleVars() []ast.VarDef {
 	panic("unreachable")
 }
 
+type nameBindingElem struct {
+	nameBinding map[ast.Value[string]]ast.Value[string]
+	left        ast.Ast      // left = struct{c int}{s...} // TODO: ast.Type --> deduced
+	assignToken tokens.Token // either '=' or ':='
+	value       ast.Ast      // expr
+}
+
+func (p *Parser) parseNameBindingAssignment(obrac scanner.TokenPos, expectedAssignment tokens.Token) nameBindingElem {
+	element := nameBindingElem{nameBinding: map[ast.Value[string]]ast.Value[string]{}}
+	level := 0
+	for p.scanner.CurrentToken() != tokens.CBRAC || level > 0 {
+	}
+	return element
+}
+
+func (p *Parser) parseNameBindingVar(obrac scanner.TokenPos) []ast.VarDef {
+
+	return nil
+}
+
 func (p *Parser) parseVars(kw scanner.TokenInfo) ast.Ast {
 	vars := &ast.VarList{Keyword: kw.FromPos()}
 varElemLoop:
