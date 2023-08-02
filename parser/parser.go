@@ -44,7 +44,7 @@ func (p *Parser) parseSimpleVars() []ast.VarDef {
 		if p.scanner.CurrentToken() != tokens.IDENT {
 			p.errors[p.scanner.ConsumeTokenInfo().FromPos()] = fmt.Errorf("unexpected token")
 			p.skipTo(append(tokens.EoI(), tokens.COMA, tokens.EOF)...)
-			return nil // TODO: return an AstError ?
+			return nil // TODO: ERROR: return an AstError ?
 		}
 		varElem := ast.VarDef{}
 		varElem.Name = ast.MakeValue[string](p.scanner.ConsumeTokenInfo())
@@ -58,7 +58,7 @@ func (p *Parser) parseSimpleVars() []ast.VarDef {
 			if len(vars) != 0 {
 				p.errors[p.scanner.CurrentPos()] = fmt.Errorf("unexpected '='. Cannot assign multiple variable with 1 '=', may be you wanted to use order binding")
 				p.skipTo(append(tokens.EoI(), tokens.COMA, tokens.EOF)...)
-				return nil
+				return nil // TODO: ERROR: return an AstError ?
 			}
 			varElem.Assign = p.scanner.ConsumeToken()
 			varElem.Value = p.parseExpr()

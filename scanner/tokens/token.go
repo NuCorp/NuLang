@@ -25,6 +25,8 @@ const (
 
 	TYPE      // type
 	STRUCT    // struct
+	GET       // get
+	SET       // set
 	INTERFACE // interface
 	ENUM      // enum
 	EXTENSION // extension
@@ -39,7 +41,7 @@ const (
 	OPERATOR  // operator
 	WITH      // with
 	ALIAS     // alias
-	TYPEOF
+	TYPEOF    // typeof
 
 	VAR   // var
 	CONST // const
@@ -198,6 +200,8 @@ var tokenStr = map[Token]string{
 
 	TYPE:      "type",
 	STRUCT:    "struct",
+	GET:       "get",
+	SET:       "set",
 	INTERFACE: "interface",
 	ENUM:      "enum",
 	EXTENSION: "extension",
