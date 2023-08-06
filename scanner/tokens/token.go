@@ -119,11 +119,11 @@ const (
 
 	punctuationStart
 
-	SEMI   //;
-	COLON  // ":"
-	COMA   // ",",
-	DOT    // ".",
-	PERIOD // "...",
+	SEMI     //;
+	COLON    // ":"
+	COMA     // ",",
+	DOT      // ".",
+	ELLIPSIS // "...",
 
 	IMPL   // "=>",
 	RARROW // "->",
@@ -288,11 +288,11 @@ var tokenStr = map[Token]string{
 	OR_ASSIGN:    "||=",
 
 	// punctuations
-	SEMI:   ";",
-	COLON:  ":",
-	COMA:   ",",
-	DOT:    ".",
-	PERIOD: "...",
+	SEMI:     ";",
+	COLON:    ":",
+	COMA:     ",",
+	DOT:      ".",
+	ELLIPSIS: "...",
 
 	IMPL:   "=>",
 	RARROW: "->",

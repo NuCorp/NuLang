@@ -146,7 +146,7 @@ func TestTokenizeCodeOperators(t *testing.T) {
 		tokens.ASSIGN, tokens.PLUS_ASSIGN, tokens.MINUS_ASSIGN, tokens.TIME_ASSIGN, tokens.DIV_ASSIGN, tokens.MOD_ASSIGN,
 		tokens.AND_ASSIGN, tokens.OR_ASSIGN, tokens.LAND_ASSIGN, tokens.LOR_ASSIGN, tokens.XOR_ASSIGN, tokens.DEFINE))
 	t.Run("punctuations", run(". ... : ; { } ( ) [ ] -> <- => ,",
-		tokens.DOT, tokens.PERIOD, tokens.COLON, tokens.SEMI, tokens.OBRAC, tokens.CBRAC, tokens.OPAREN, tokens.CPAREN,
+		tokens.DOT, tokens.ELLIPSIS, tokens.COLON, tokens.SEMI, tokens.OBRAC, tokens.CBRAC, tokens.OPAREN, tokens.CPAREN,
 		tokens.OBRAK, tokens.CBRAK, tokens.RARROW, tokens.LARROW, tokens.IMPL, tokens.COMA))
 
 	t.Run("period error", run("..+", tokens.ERR, tokens.PLUS))

@@ -48,8 +48,8 @@ func (t *tokenizeOperatorAndPunctuation) Tokenize(r rune, pos TokenPos) Tokenize
 		tokens.GT.String():     {{'=', tokens.GE}, {'>', tokens.RSHIFT}},
 		tokens.LT.String():     {{'=', tokens.LE}, {'<', tokens.LSHIFT}, {'-', tokens.LARROW}},
 		tokens.COLON.String():  {{'=', tokens.DEFINE}},
-		tokens.DOT.String():    {{'.', tokens.PERIOD}},
-		"..":                   {{'.', tokens.PERIOD}},
+		tokens.DOT.String():    {{'.', tokens.ELLIPSIS}},
+		"..":                   {{'.', tokens.ELLIPSIS}},
 		"": {
 			{'+', tokens.PLUS},
 			{'-', tokens.MINUS},
