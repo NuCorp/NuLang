@@ -45,7 +45,7 @@ func (p *Parser) addError(err error) {
 	p.errors[p.scanner.CurrentPos()] = errors.Join(oldErr, err)
 }
 
-func (p *Parser) parseNameBindingElem() *ast.NameBindingElem {
+func (p *Parser) parseNameBindingElem() ast.BindingElement {
 	elem := &ast.NameBindingElem{}
 	if p.scanner.CurrentToken() != tokens.IDENT {
 		p.addError(fmt.Errorf("expected an identifier but got: %v", p.scanner.CurrentToken()))
@@ -58,6 +58,14 @@ func (p *Parser) parseNameBindingElem() *ast.NameBindingElem {
 	}
 
 	elem.Colon = p.scanner.ConsumeToken()
+
+	if p.scanner.CurrentToken() == tokens.ELLIPSIS {
+		return &ast.BindingLeft{
+			VariableName: elem.VariableName,
+			Colon:        elem.Colon,
+			Ellipsis:     p.scanner.ConsumeTokenInfo(),
+		}
+	}
 
 	if p.scanner.CurrentToken() != tokens.IDENT {
 		p.addError(fmt.Errorf("expected an identifier (corresponding to the attribute name) after `:`, but got: %v", p.scanner.CurrentToken()))
@@ -78,9 +86,21 @@ func (p *Parser) parseNameBinding(star, obrace scanner.TokenInfo, isVar bool) *a
 	}
 	p.skipTokens(tokens.EoI()...)
 	for p.scanner.CurrentToken() != tokens.CBRAC && p.scanner.CurrentToken() != tokens.EOF {
+		if nameBinding.Left != nil {
+			p.addError(fmt.Errorf("cannot continue binding after `...` binding"))
+			p.skipTo(append(tokens.EoI(), tokens.CBRAC)...)
+			break
+		}
 		elem := p.parseNameBindingElem()
 		if elem != nil {
-			nameBinding.Elements = append(nameBinding.Elements, elem)
+			switch elem := elem.(type) {
+			case *ast.NameBindingElem:
+				nameBinding.Elements = append(nameBinding.Elements, elem)
+			case *ast.BindingLeft:
+				nameBinding.Left = elem
+			default:
+				panic("unreachable")
+			}
 		}
 		if p.scanner.CurrentToken() == tokens.COMA {
 			p.scanner.ConsumeToken()

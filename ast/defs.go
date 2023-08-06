@@ -70,6 +70,7 @@ type NameBinding struct {
 	Star        scanner.TokenPos
 	OpenBrace   tokens.Token
 	Elements    []*NameBindingElem
+	Left        *BindingLeft
 	CloseBrace  tokens.Token
 	AssignToken tokens.Token
 	Value       Ast
@@ -88,7 +89,11 @@ func (n NameBinding) String() string {
 	for _, element := range n.Elements {
 		str += element.String() + ", "
 	}
-	return strings.TrimSuffix(str, ", ") + "} " + n.AssignToken.String() + " " + n.Value.String()
+	str = strings.TrimSuffix(str, ", ")
+	if n.Left != nil {
+		str += fmt.Sprintf(", %v", n.Left)
+	}
+	return str + fmt.Sprintf("} %v %v", n.AssignToken.String(), n.Value.String())
 }
 
 type NameBindingElem struct {
@@ -98,6 +103,8 @@ type NameBindingElem struct {
 	BindingExpr   Ast // from AttributeName
 	// linked value: for def checking
 }
+
+func (NameBindingElem) bindingElement() {}
 
 func (n NameBindingElem) From() scanner.TokenPos {
 	return n.VariableName.From()
@@ -114,6 +121,24 @@ func (n NameBindingElem) String() string {
 		str += fmt.Sprintf(": %v", n.BindingExpr)
 	}
 	return str
+}
+
+type BindingLeft struct {
+	VariableName Ident
+	Colon        tokens.Token
+	Ellipsis     scanner.TokenInfo
+}
+
+func (*BindingLeft) bindingElement() {}
+
+func (b *BindingLeft) From() scanner.TokenPos {
+	return b.VariableName.From()
+}
+func (b *BindingLeft) To() scanner.TokenPos {
+	return b.Ellipsis.ToPos()
+}
+func (b *BindingLeft) String() string {
+	return fmt.Sprintf("%v: ...", b.VariableName)
 }
 
 type BindingElement interface {
