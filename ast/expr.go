@@ -121,3 +121,26 @@ func (d *DottedExpr) String() string {
 	}
 	return fmt.Sprintf("%v.%v", d.Left, right)
 }
+
+type AsExpr struct {
+	Expr Ast
+
+	As        tokens.Token
+	Specifier tokens.Token // either !, ? or NoInit
+
+	Type Ast
+}
+
+func (a AsExpr) From() scanner.TokenPos {
+	return a.Expr.From()
+}
+func (a AsExpr) To() scanner.TokenPos {
+	return a.Type.To()
+}
+func (a AsExpr) String() string {
+	specifier := ""
+	if a.Specifier != tokens.NoInit {
+		specifier = a.Specifier.String()
+	}
+	return fmt.Sprintf("(%v as%v %v)", a.Expr, specifier, a.Type)
+}

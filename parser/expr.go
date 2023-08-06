@@ -116,20 +116,47 @@ func (p *Parser) parseDotExpr(left ast.Ast, dot tokens.Token) ast.Ast {
 	return dotExpr
 }
 
-func (p *Parser) parseSingleExpr() ast.Ast {
-	if p.scanner.CurrentToken().IsLiteral() {
-		return p.parseLiteralValue()
+func (p *Parser) parseAsExpr(left ast.Ast, as tokens.Token) ast.Ast {
+	asExpr := ast.AsExpr{
+		Expr: left,
+		As:   as,
 	}
+	if p.scanner.CurrentToken() == tokens.NOT || p.scanner.CurrentToken() == tokens.ASK {
+		asExpr.Specifier = p.scanner.ConsumeToken()
+	}
+
+	asExpr.Type = p.parseType()
+
+	return asExpr
+}
+
+func (p *Parser) parseSingleExpr() ast.Ast {
+	var expr ast.Ast
 	switch p.scanner.CurrentToken() {
 	case tokens.MINUS:
-		return p.parseSingedExpr()
+		expr = p.parseSingedExpr()
 	case tokens.IDENT:
-		ident := ast.Ident(p.scanner.ConsumeTokenInfo())
-		return &ident
+		expr = ast.Ident(p.scanner.ConsumeTokenInfo())
+	default:
+		if p.scanner.CurrentToken().IsLiteral() {
+			expr = p.parseLiteralValue()
+			break
+		}
+		p.errors[p.scanner.CurrentTokenInfo().FromPos()] = fmt.Errorf("unexpected token `%v` to start an expression", p.scanner.CurrentToken())
+		p.skipTo(tokens.EoI()...)
 	}
-	p.errors[p.scanner.CurrentTokenInfo().FromPos()] = fmt.Errorf("unexpected token `%v` to start an expression", p.scanner.CurrentToken())
-	p.skipTo(tokens.EoI()...)
-	return nil
+afterExpr:
+	for {
+		switch p.scanner.CurrentToken() {
+		case tokens.DOT:
+			expr = p.parseDotExpr(expr, p.scanner.ConsumeToken())
+		case tokens.AS:
+			expr = p.parseAsExpr(expr, p.scanner.ConsumeToken())
+		default:
+			break afterExpr
+		}
+	}
+	return expr
 }
 
 func (p *Parser) parseExpr() ast.Ast {
@@ -138,8 +165,6 @@ func (p *Parser) parseExpr() ast.Ast {
 		switch p.scanner.CurrentToken() {
 		case tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.MOD, tokens.FRAC_DIV:
 			expr = p.parseBinop(expr, p.scanner.ConsumeToken())
-		case tokens.DOT:
-			expr = p.parseDotExpr(expr, p.scanner.ConsumeToken())
 		default:
 			return expr
 		}
