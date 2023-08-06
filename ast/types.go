@@ -11,7 +11,7 @@ type DottedType struct {
 
 type LStructType struct {
 	Opening    scanner.TokenPos
-	Attributes []VarDef
+	Attributes []*NamedDef
 	Getter     []bool // Getter.Length == Attribute.Length
 	Ending     scanner.TokenPos
 }

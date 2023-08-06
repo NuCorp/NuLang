@@ -30,7 +30,9 @@ func (p *Parser) parseLStructType(opening scanner.TokenInfo) ast.Ast {
 				break
 			}
 		}
-		lstruct.Attributes = append(lstruct.Attributes, attributes...)
+		for _, attribute := range attributes {
+			lstruct.Attributes = append(lstruct.Attributes, attribute.(*ast.NamedDef))
+		}
 		for range attributes {
 			lstruct.Getter = append(lstruct.Getter, getter)
 		}
@@ -44,6 +46,7 @@ func (p *Parser) parseLStructType(opening scanner.TokenInfo) ast.Ast {
 	if p.scanner.CurrentToken() != tokens.CBRAC {
 		p.errors[p.scanner.CurrentPos()] = fmt.Errorf("missing `}` to close the structure")
 		lstruct.Ending = p.scanner.CurrentPos()
+		p.skipTo(tokens.EoI()...)
 		return nil // TODO: ERROR: return ast.Error ?
 	}
 	lstruct.Ending = p.scanner.ConsumeTokenInfo().ToPos()

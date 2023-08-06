@@ -9,6 +9,7 @@ import (
 type Ast interface {
 	From() scanner.TokenPos
 	To() scanner.TokenPos
+	String() string
 }
 
 type LiteralExpr[T comparable] struct {

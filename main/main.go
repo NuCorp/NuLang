@@ -39,7 +39,10 @@ func main() {
 var a int = 42, b {{get a, b int, c = 42}}, d struct{a int
 c struct
 a int}}
-var b = 18`[1:])
+var *{ = 42
+var *{a: a + 2} = 18
+var *{a} = 18, *{a: 42} = 31
+`[1:])
 	ast, errs := parser.Parse(code, config.ToolInfo{}.WithKind(config.Interactive))
 	for _, elem := range ast {
 		fmt.Println(elem)

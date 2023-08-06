@@ -1,12 +1,14 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"strings"
 )
 
 type Parser struct {
@@ -35,101 +37,113 @@ var conflictFor = map[tokens.Token]conflictResolver{
 	},
 }
 
-func (p *Parser) parseSimpleVars() []ast.VarDef {
-	var vars []ast.VarDef
-	for p.scanner.CurrentToken() != tokens.EOF {
-		for p.scanner.CurrentTokenInfo().RawString() == "\n" {
-			p.scanner.ConsumeToken()
+func (p *Parser) addError(err error) {
+	oldErr, exists := p.errors[p.scanner.CurrentPos()]
+	if exists && !strings.HasPrefix(err.Error(), "|\t") {
+		err = fmt.Errorf("|\t%v", err.Error())
+	}
+	p.errors[p.scanner.CurrentPos()] = errors.Join(oldErr, err)
+}
+
+func (p *Parser) parseNameBindingElem() *ast.NameBindingElem {
+	elem := &ast.NameBindingElem{}
+	if p.scanner.CurrentToken() != tokens.IDENT {
+		p.addError(fmt.Errorf("expected an identifier but got: %v", p.scanner.CurrentToken()))
+		return nil // TODO: ERROR
+	}
+	elem.VariableName = ast.Ident(p.scanner.ConsumeTokenInfo())
+
+	if p.scanner.CurrentToken() != tokens.COLON {
+		return elem
+	}
+
+	elem.Colon = p.scanner.ConsumeToken()
+
+	if p.scanner.CurrentToken() != tokens.IDENT {
+		p.addError(fmt.Errorf("expected an identifier (corresponding to the attribute name) after `:`, but got: %v", p.scanner.CurrentToken()))
+		return nil // TODO: ERROR
+	}
+
+	elem.AttributeName = ast.Ident(p.scanner.CurrentTokenInfo())
+
+	elem.BindingExpr = p.parseExpr() // we are sure the expression starts with an identifier
+
+	return elem
+}
+
+func (p *Parser) parseNameBinding(star, obrace scanner.TokenInfo, isVar bool) *ast.NameBinding {
+	nameBinding := &ast.NameBinding{
+		Star:      star.FromPos(),
+		OpenBrace: obrace.Token(),
+	}
+	p.skipTokens(tokens.EoI()...)
+	for p.scanner.CurrentToken() != tokens.CBRAC && p.scanner.CurrentToken() != tokens.EOF {
+		elem := p.parseNameBindingElem()
+		if elem != nil {
+			nameBinding.Elements = append(nameBinding.Elements, elem)
 		}
-		if p.scanner.CurrentToken() != tokens.IDENT {
-			p.errors[p.scanner.ConsumeTokenInfo().FromPos()] = fmt.Errorf("unexpected token")
-			p.skipTo(append(tokens.EoI(), tokens.COMA, tokens.EOF)...)
-			return nil // TODO: ERROR: return an AstError ?
-		}
-		varElem := ast.VarDef{}
-		varElem.Name = ast.MakeValue[string](p.scanner.ConsumeTokenInfo())
-		if p.scanner.CurrentToken() == tokens.COMA { // IDENT `,` IDENT --> multiple variable of the same type (without value)
+		if p.scanner.CurrentToken() == tokens.COMA {
 			p.scanner.ConsumeToken()
-			vars = append(vars, varElem)
+			p.skipTokens(tokens.EoI()...)
 			continue
 		}
-	assignment:
-		if p.scanner.CurrentToken() == tokens.ASSIGN { // IDENT `=` Expr --> assignment declaration (it also might be: IDENT Type `=` Expr)
-			if len(vars) != 0 {
-				p.errors[p.scanner.CurrentPos()] = fmt.Errorf("unexpected '='. Cannot assign multiple variable with 1 '=', may be you wanted to use order binding")
-				p.skipTo(append(tokens.EoI(), tokens.COMA, tokens.EOF)...)
-				return nil // TODO: ERROR: return an AstError ?
+
+		if p.scanner.CurrentToken() != tokens.CBRAC {
+			p.skipTokens(tokens.EoI()...)
+			if p.scanner.CurrentToken() != tokens.CBRAC {
+				p.addError(fmt.Errorf("binding element must be directly followed by `,` to be continued"))
 			}
-			varElem.Assign = p.scanner.ConsumeToken()
-			varElem.Value = p.parseExpr()
-			return []ast.VarDef{varElem}
+			break
 		}
 
-		// IDENT ?? --> the '??' corresponds to the type
-		// It may be IDENT Type `=` Expr (meaning it has only one varElem) or IDENT Type `,` (and then 'Type' apply to all previous varElem)
-		// then return
-		varElem.Typ = p.parseType()
-		if p.scanner.CurrentToken() == tokens.ASSIGN {
-			goto assignment // first case: IDENT Type `=` Expr --> Type is only for the one VarElem
-		}
-		// second case: IDENT (`,` IDENT)* Type --> Type apply to all previous VarElem
-		for i := range vars {
-			vars[i].Typ = varElem.Typ
-		}
-		return append(vars, varElem)
 	}
-	panic("unreachable")
-}
 
-type nameBindingElem struct {
-	nameBinding map[ast.Value[string]]ast.Value[string]
-	left        ast.Ast      // left = struct{c int}{s...} // TODO: ast.Type --> deduced
-	assignToken tokens.Token // either '=' or ':='
-	value       ast.Ast      // expr
-}
-
-func (p *Parser) parseNameBindingAssignment(obrac scanner.TokenPos, expectedAssignment tokens.Token) nameBindingElem {
-	element := nameBindingElem{nameBinding: map[ast.Value[string]]ast.Value[string]{}}
-	level := 0
-	for p.scanner.CurrentToken() != tokens.CBRAC || level > 0 {
+	if len(nameBinding.Elements) == 0 {
+		p.addError(fmt.Errorf("|\tbinding element can't be empty"))
 	}
-	return element
-}
 
-func (p *Parser) parseNameBindingVar(obrac scanner.TokenPos) []ast.VarDef {
+	if p.scanner.CurrentToken() == tokens.CBRAC {
+		nameBinding.CloseBrace = p.scanner.ConsumeToken()
+	} else {
+		p.addError(fmt.Errorf("|\texpected '}' to close the name binding"))
+	}
 
-	return nil
-}
-
-func (p *Parser) parseVars(kw scanner.TokenInfo) ast.Ast {
-	vars := &ast.VarList{Keyword: kw.FromPos()}
-varElemLoop:
-	for !p.scanner.CurrentToken().IsEoI() && p.scanner.CurrentToken() != tokens.EOF {
-		switch p.scanner.CurrentToken() {
-		case tokens.OBRAK:
-		case tokens.OBRAC:
-		case tokens.IDENT:
-			vars.AddVars(p.parseSimpleVars()...)
-			if p.scanner.CurrentToken() != tokens.COMA {
-				break varElemLoop
-			}
-			p.scanner.ConsumeToken()
-			p.skipTokens(tokens.NL)
+	if p.scanner.CurrentToken() != tokens.ASSIGN && p.scanner.CurrentToken() != tokens.DEFINE {
+		if _, exists := p.errors[p.scanner.CurrentPos()]; exists {
+			p.skipTo(tokens.EoI()...)
+			return nil // TODO: ERROR: return ast.Error ?
 		}
+		p.addError(fmt.Errorf("expected assign (=) or define (:=) token but got `%v`", p.scanner.CurrentToken()))
+		p.skipTo(tokens.EoI()...)
+		return nil // TODO: ERROR: return ast.Error ?
 	}
-	return vars
+
+	if p.scanner.CurrentToken() == tokens.DEFINE && isVar {
+		p.addError(fmt.Errorf("define operator (:=) cannot be used in `var` like defininiton"))
+		p.scanner.ConsumeToken()
+		nameBinding.AssignToken = tokens.ASSIGN
+	} else {
+		nameBinding.AssignToken = p.scanner.ConsumeToken()
+	}
+
+	nameBinding.Value = p.parseExpr()
+
+	return nameBinding
 }
 
-func (p *Parser) parseDef() ast.Ast {
+func (p *Parser) parseBinding(star scanner.TokenInfo, isVar bool) ast.VarElem {
 	switch p.scanner.CurrentToken() {
-	case tokens.VAR:
-		return p.parseVars(p.scanner.ConsumeTokenInfo())
+	case tokens.OBRAC:
+		return p.parseNameBinding(star, p.scanner.ConsumeTokenInfo(), isVar)
+	default:
+		p.errors[p.scanner.CurrentPos()] = fmt.Errorf("unexpected token %v", p.scanner.CurrentToken())
+		return nil
 	}
-	return nil
 }
 
 func (p *Parser) parseInteractive() {
 	for p.scanner.CurrentToken() != tokens.EOF {
+		p.skipTokens(tokens.EoI()...)
 		if resolver, found := conflictFor[p.scanner.CurrentToken()]; found {
 			parser := resolver(p)
 			p.astFile = append(p.astFile, parser())
@@ -143,12 +157,16 @@ func (p *Parser) parseInteractive() {
 			p.astFile = append(p.astFile, p.parseDef())
 			continue
 		}
-		p.skipTokens(tokens.EoI()...)
+		if p.scanner.CurrentToken() == tokens.EOF {
+			break
+		}
+		p.addError(fmt.Errorf("invalid token `%v` to start an interactive instruction", p.scanner.ConsumeToken()))
+		p.skipTo(tokens.EoI()...)
 	}
 }
 
 func (p *Parser) skipTo(tokenOpt ...tokens.Token) {
-	for !container.Contains(p.scanner.ConsumeToken(), tokenOpt) {
+	for p.scanner.CurrentToken() != tokens.EOF && !container.Contains(p.scanner.ConsumeToken(), tokenOpt) {
 	}
 }
 
