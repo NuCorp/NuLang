@@ -12,9 +12,11 @@ type TokenPos struct {
 	col, line int
 }
 
-func (pos TokenPos) Col() int       { return pos.col }
-func (pos TokenPos) Line() int      { return pos.line }
-func (pos TokenPos) String() string { return fmt.Sprintf("%v:%v", pos.line+1, pos.col) }
+func (pos TokenPos) Col() int  { return pos.col }
+func (pos TokenPos) Line() int { return pos.line }
+func (pos TokenPos) String() string {
+	return fmt.Sprintf("%v:%v (col %v)", pos.fileRef, pos.line+1, pos.col)
+}
 func (pos TokenPos) AtNextCol() TokenPos {
 	pos.col++
 	return pos

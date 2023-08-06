@@ -16,3 +16,7 @@ func ContainsMatch[T any](array []T, matchToFind func(elem T) bool) bool {
 	}
 	return false
 }
+
+func Eq[T any](arr1, arr2 []T) bool {
+	return reflect.DeepEqual(arr1, arr2)
+}

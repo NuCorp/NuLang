@@ -45,12 +45,90 @@ func (p *Parser) addError(err error) {
 	p.errors[p.scanner.CurrentPos()] = errors.Join(oldErr, err)
 }
 
+func (p *Parser) parseSubBindingElem(opening scanner.TokenInfo) *ast.SubBinding {
+	subbinding := &ast.SubBinding{
+		Opening: opening,
+	}
+	switch subbinding.Opening.Token() {
+	case tokens.OBRAC:
+		subbinding.Closing = tokens.CBRAC
+	case tokens.OPAREN:
+	case tokens.OBRAK:
+	default:
+		panic("unreachable")
+	}
+	subbingins := []*ast.SubBinding{subbinding}
+	lastSubBinding := func() *ast.SubBinding {
+		return subbingins[len(subbingins)-1]
+	}
+	for len(subbingins) > 0 {
+		switch p.scanner.CurrentToken() {
+		case tokens.COMA:
+			if len(lastSubBinding().Elements) == 0 {
+				p.addError(fmt.Errorf("expected at least one (valid) element before ','"))
+			}
+			if lastSubBinding().HasBindingLeft() {
+				p.addError(fmt.Errorf("cannot add another binding element after `...`"))
+			}
+			p.scanner.ConsumeToken()
+			p.skipTokens(tokens.NL)
+			continue
+		case tokens.OBRAC /*, tokens.OPAREN, tokens.OBRAK */ :
+			subbingins = append(subbingins, &ast.SubBinding{
+				Opening: p.scanner.ConsumeTokenInfo(),
+				Closing: tokens.CBRAC,
+			})
+			continue
+		case lastSubBinding().Closing:
+			if len(lastSubBinding().Elements) == 0 {
+				p.addError(fmt.Errorf("cannot have empty binding"))
+				subbingins = subbingins[:len(subbingins)-1]
+				p.scanner.ConsumeToken()
+				continue
+			}
+			lastSubBinding().Closing = p.scanner.ConsumeToken()
+			if !container.Eq(p.scanner.LookUpTokens(2), []tokens.Token{tokens.COLON, tokens.IDENT}) {
+				p.addError(fmt.Errorf("`: <attribute name>` is required for sub bindings element"))
+			} else {
+				lastSubBinding().Colon = p.scanner.ConsumeToken()
+				lastSubBinding().AttributeName = ast.Ident(p.scanner.ConsumeTokenInfo())
+			}
+			binding := lastSubBinding()
+			subbingins = subbingins[:len(subbingins)-1]
+			if len(subbingins) == 0 {
+				continue
+			}
+			lastSubBinding().AddBindingElement(binding)
+		case tokens.IDENT:
+			var bindingElementParser func() ast.BindingElement
+			switch lastSubBinding().Opening.Token() {
+			case tokens.OBRAC:
+				bindingElementParser = p.parseNameBindingElem
+			case tokens.OPAREN:
+			case tokens.OBRAK:
+			default:
+				panic("unreachable")
+			}
+			lastSubBinding().AddBindingElement(bindingElementParser())
+
+		default:
+			p.addError(fmt.Errorf("unexpected token `%v`", p.scanner.ConsumeToken()))
+			p.skipTo(lastSubBinding().Closing, tokens.COMA)
+		}
+	}
+	return subbinding
+}
 func (p *Parser) parseNameBindingElem() ast.BindingElement {
-	elem := &ast.NameBindingElem{}
-	if p.scanner.CurrentToken() != tokens.IDENT {
+	switch p.scanner.CurrentToken() {
+	case tokens.OBRAC, tokens.OBRAK, tokens.OPAREN:
+		return p.parseSubBindingElem(p.scanner.ConsumeTokenInfo())
+	case tokens.IDENT:
+		break
+	default:
 		p.addError(fmt.Errorf("expected an identifier but got: %v", p.scanner.CurrentToken()))
 		return nil // TODO: ERROR
 	}
+	elem := &ast.NameBindingElem{}
 	elem.VariableName = ast.Ident(p.scanner.ConsumeTokenInfo())
 
 	if p.scanner.CurrentToken() != tokens.COLON {
@@ -86,21 +164,14 @@ func (p *Parser) parseNameBinding(star, obrace scanner.TokenInfo, isVar bool) *a
 	}
 	p.skipTokens(tokens.EoI()...)
 	for p.scanner.CurrentToken() != tokens.CBRAC && p.scanner.CurrentToken() != tokens.EOF {
-		if nameBinding.Left != nil {
+		if nameBinding.HasBindingLeft() {
 			p.addError(fmt.Errorf("cannot continue binding after `...` binding"))
 			p.skipTo(append(tokens.EoI(), tokens.CBRAC)...)
 			break
 		}
 		elem := p.parseNameBindingElem()
 		if elem != nil {
-			switch elem := elem.(type) {
-			case *ast.NameBindingElem:
-				nameBinding.Elements = append(nameBinding.Elements, elem)
-			case *ast.BindingLeft:
-				nameBinding.Left = elem
-			default:
-				panic("unreachable")
-			}
+			nameBinding.AddBindingElement(elem)
 		}
 		if p.scanner.CurrentToken() == tokens.COMA {
 			p.scanner.ConsumeToken()
@@ -119,13 +190,13 @@ func (p *Parser) parseNameBinding(star, obrace scanner.TokenInfo, isVar bool) *a
 	}
 
 	if len(nameBinding.Elements) == 0 {
-		p.addError(fmt.Errorf("|\tbinding element can't be empty"))
+		p.addError(fmt.Errorf("binding element can't be empty"))
 	}
 
 	if p.scanner.CurrentToken() == tokens.CBRAC {
 		nameBinding.CloseBrace = p.scanner.ConsumeToken()
 	} else {
-		p.addError(fmt.Errorf("|\texpected '}' to close the name binding"))
+		p.addError(fmt.Errorf("expected '}' to close the name binding"))
 	}
 
 	if p.scanner.CurrentToken() != tokens.ASSIGN && p.scanner.CurrentToken() != tokens.DEFINE {

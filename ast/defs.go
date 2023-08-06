@@ -69,31 +69,38 @@ func (*NamedDef) varElem() {}
 type NameBinding struct {
 	Star        scanner.TokenPos
 	OpenBrace   tokens.Token
-	Elements    []*NameBindingElem
-	Left        *BindingLeft
+	Elements    []BindingElement
+	hasLeft     bool
 	CloseBrace  tokens.Token
 	AssignToken tokens.Token
 	Value       Ast
 }
 
-func (NameBinding) varElem() {}
+func (*NameBinding) varElem() {}
 
-func (n NameBinding) From() scanner.TokenPos {
+func (n *NameBinding) From() scanner.TokenPos {
 	return n.Star
 }
-func (n NameBinding) To() scanner.TokenPos {
+func (n *NameBinding) To() scanner.TokenPos {
 	return n.Value.To()
 }
-func (n NameBinding) String() string {
+func (n *NameBinding) String() string {
 	str := "*{"
 	for _, element := range n.Elements {
 		str += element.String() + ", "
 	}
 	str = strings.TrimSuffix(str, ", ")
-	if n.Left != nil {
-		str += fmt.Sprintf(", %v", n.Left)
-	}
 	return str + fmt.Sprintf("} %v %v", n.AssignToken.String(), n.Value.String())
+}
+
+func (n *NameBinding) AddBindingElement(element BindingElement) {
+	if _, isBindingLeft := element.(*BindingLeft); isBindingLeft {
+		n.hasLeft = true
+	}
+	n.Elements = append(n.Elements, element)
+}
+func (n *NameBinding) HasBindingLeft() bool {
+	return n.hasLeft
 }
 
 type NameBindingElem struct {
@@ -122,6 +129,42 @@ func (n NameBindingElem) String() string {
 	}
 	return str
 }
+
+type SubBinding struct {
+	Opening       scanner.TokenInfo
+	Elements      []BindingElement
+	hasLeft       bool
+	Closing       tokens.Token
+	Colon         tokens.Token
+	AttributeName Ident // required
+}
+
+func (s *SubBinding) From() scanner.TokenPos {
+	return s.Opening.FromPos()
+}
+func (s *SubBinding) To() scanner.TokenPos {
+	return s.AttributeName.To()
+}
+func (s *SubBinding) String() string {
+	str := s.Opening.Token().String()
+	for _, element := range s.Elements {
+		str += fmt.Sprintf("%v, ", element)
+	}
+	str = strings.TrimSuffix(str, ", ")
+	return str + fmt.Sprintf("%v: %v", s.Closing, s.AttributeName)
+}
+
+func (s *SubBinding) AddBindingElement(element BindingElement) {
+	if _, isBindingLeft := element.(*BindingLeft); isBindingLeft {
+		s.hasLeft = true
+	}
+	s.Elements = append(s.Elements, element)
+}
+func (s *SubBinding) HasBindingLeft() bool {
+	return s.hasLeft
+}
+
+func (*SubBinding) bindingElement() {}
 
 type BindingLeft struct {
 	VariableName Ident
