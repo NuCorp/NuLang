@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils"
 )
@@ -130,6 +131,25 @@ func (p *Parser) parseAsExpr(left ast.Ast, as tokens.Token) ast.Ast {
 	return asExpr
 }
 
+func (p *Parser) parseTupleExpr(oparen scanner.TokenPos) ast.Ast {
+	tuple := ast.TupleExpr{OpenParen: oparen}
+	for p.scanner.CurrentToken() != tokens.CPAREN && p.scanner.CurrentToken() != tokens.EOF {
+		p.skipTokens(tokens.NL)
+		tuple.ExprList = append(tuple.ExprList, p.parseExpr())
+		if p.scanner.CurrentToken() == tokens.COMA {
+			p.scanner.ConsumeToken()
+			continue
+		}
+		if p.scanner.CurrentToken() == tokens.CPAREN {
+			tuple.CloseParen = p.scanner.ConsumeTokenInfo().ToPos()
+			break
+		}
+		p.addError(fmt.Errorf("unexpected token: %v. expected `)` or `,` (to continue the tuple)", p.scanner.CurrentToken()))
+		break
+	}
+	return tuple
+}
+
 func (p *Parser) parseSingleExpr() ast.Ast {
 	var expr ast.Ast
 	switch p.scanner.CurrentToken() {
@@ -137,6 +157,8 @@ func (p *Parser) parseSingleExpr() ast.Ast {
 		expr = p.parseSingedExpr()
 	case tokens.IDENT:
 		expr = ast.Ident(p.scanner.ConsumeTokenInfo())
+	case tokens.OPAREN:
+		expr = p.parseTupleExpr(p.scanner.ConsumeTokenInfo().FromPos())
 	default:
 		if p.scanner.CurrentToken().IsLiteral() {
 			expr = p.parseLiteralValue()

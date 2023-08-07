@@ -87,11 +87,11 @@ func (p *Parser) parseSubBindingElem(opening scanner.TokenInfo) *ast.SubBinding 
 				continue
 			}
 			lastSubBinding().Closing = p.scanner.ConsumeToken()
-			if !container.Eq(p.scanner.LookUpTokens(2), []tokens.Token{tokens.COLON, tokens.IDENT}) {
-				p.addError(fmt.Errorf("`: <attribute name>` is required for sub bindings element"))
-			} else {
+			if container.Eq(p.scanner.LookUpTokens(2), []tokens.Token{tokens.COLON, tokens.IDENT}) {
 				lastSubBinding().Colon = p.scanner.ConsumeToken()
 				lastSubBinding().AttributeName = ast.Ident(p.scanner.ConsumeTokenInfo())
+			} else {
+				p.addError(fmt.Errorf("`: <attribute name>` is required for sub bindings element"))
 			}
 			binding := lastSubBinding()
 			subbingins = subbingins[:len(subbingins)-1]
@@ -145,14 +145,17 @@ func (p *Parser) parseNameBindingElem() ast.BindingElement {
 		}
 	}
 
-	if p.scanner.CurrentToken() != tokens.IDENT {
+	if p.scanner.CurrentToken() == tokens.IDENT {
+		elem.AttributeName = ast.Ident(p.scanner.CurrentTokenInfo())
+	} else if container.Eq(p.scanner.LookUpTokens(2), []tokens.Token{tokens.OPAREN, tokens.IDENT}) {
+		elem.AttributeName = ast.Ident(p.scanner.LookUp(2)[1])
+	} else {
 		p.addError(fmt.Errorf("expected an identifier (corresponding to the attribute name) after `:`, but got: %v", p.scanner.CurrentToken()))
 		return nil // TODO: ERROR
 	}
 
-	elem.AttributeName = ast.Ident(p.scanner.CurrentTokenInfo())
-
-	elem.BindingExpr = p.parseExpr() // we are sure the expression starts with an identifier
+	elem.BindingExpr = p.parseExpr() // we are sure the expression starts with an identifier or a tuple with an identifier
+	// if it starts with a tuple we have to make sure it contains only one element (GetRightestElement ?)
 
 	return elem
 }
