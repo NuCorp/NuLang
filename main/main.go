@@ -36,9 +36,10 @@ func executor(elem ast.Ast) int64 {
 
 func main() {
 	code := scanner.TokenizeCode(`
-var *{{a}: b, {{a}: b}: c, d: a.b as int} = structure
+var *{{a}: b, {{a}: b}: c, d: (a.b as int).Square} = structure
 
-var a = 4 + 5 * 6 + a.b as! int as float.c
+var a = 4 + 5 * 6 + (a.b as! int as float).c
+var b = (42, 18)
 `[1:])
 	ast, errs := parser.Parse(code, config.ToolInfo{}.WithKind(config.Interactive))
 	for _, elem := range ast {

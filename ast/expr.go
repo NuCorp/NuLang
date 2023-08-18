@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"strings"
 )
 
 type Ast interface {
@@ -142,5 +143,26 @@ func (a AsExpr) String() string {
 	if a.Specifier != tokens.NoInit {
 		specifier = a.Specifier.String()
 	}
-	return fmt.Sprintf("(%v as%v %v)", a.Expr, specifier, a.Type)
+	return fmt.Sprintf("%v as%v %v", a.Expr, specifier, a.Type)
+}
+
+type TupleExpr struct {
+	OpenParen  scanner.TokenPos
+	ExprList   []Ast
+	CloseParen scanner.TokenPos
+}
+
+func (t TupleExpr) From() scanner.TokenPos {
+	return t.OpenParen
+}
+func (t TupleExpr) To() scanner.TokenPos {
+	return t.CloseParen
+}
+func (t TupleExpr) String() string {
+	str := "("
+	for _, expr := range t.ExprList {
+		str += fmt.Sprintf("%v, ", expr)
+	}
+
+	return strings.TrimSuffix(str, ", ") + ")"
 }
