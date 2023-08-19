@@ -16,7 +16,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 				}
 			}()
 			scanner := TokenizeCode(code)
-			scanCode := scanner.tokens
+			scanCode := scanner.LookUp(-1)
 			got := scanCode.String()
 			if got != expected {
 				t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -35,7 +35,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 
 	t.Run("simple integer 1", func(t *testing.T) {
 		code := "18"
-		got := TokenizeCode(code).tokens.String()
+		got := TokenizeCode(code).LookUp(1).String()
 		expected := "18 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -43,7 +43,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 2", func(t *testing.T) {
 		code := "31"
-		got := TokenizeCode(code).tokens.String()
+		got := TokenizeCode(code).LookUp(1).String()
 		expected := "31 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -51,7 +51,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 3", func(t *testing.T) {
 		code := "42"
-		got := TokenizeCode(code).tokens.String()
+		got := TokenizeCode(code).LookUp(1).String()
 		expected := "42 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -59,7 +59,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 4", func(t *testing.T) {
 		code := "23"
-		got := TokenizeCode(code).tokens.String()
+		got := TokenizeCode(code).LookUp(1).String()
 		expected := "23 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -67,7 +67,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("binary format", func(t *testing.T) {
 		code := "0b010"
-		got := TokenizeCode(code).tokens.String()
+		got := TokenizeCode(code).LookUp(1).String()
 		expected := "2 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -75,7 +75,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("octal format", func(t *testing.T) {
 		code := "0o70"
-		got := TokenizeCode(code).tokens.String()
+		got := TokenizeCode(code).LookUp(1).String()
 		expected := "56 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -83,7 +83,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("hex format", func(t *testing.T) {
 		code := "0x0A0"
-		got := TokenizeCode(code).tokens.String()
+		got := TokenizeCode(code).LookUp(1).String()
 		expected := "160 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -124,9 +124,9 @@ func TestTokenizeCodeOperators(t *testing.T) {
 			}()
 
 			scanner := TokenizeCode(code)
-			got := scanner.tokens
+			got := scanner.LookUp(-1)
 			if len(got.TokenList()) != len(expectedTokens) {
-				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got.TokenList()), expectedTokens, got.TokenList())
+				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got.TokenList())
 			}
 			for idx, expectedToken := range expectedTokens {
 				if expectedToken != got[idx].Token() {
@@ -162,7 +162,7 @@ func TestTokenizeCodeText(t *testing.T) {
 			}()
 
 			scanner := TokenizeCode(code)
-			got := scanner.tokens
+			got := scanner.LookUp(-1)
 			if len(got.TokenList()) != len(expectedTokens) {
 				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got.TokenList()), expectedTokens, got.TokenList())
 			}
@@ -208,7 +208,7 @@ func TestTokenizeCode(t *testing.T) {
 			}()
 
 			scanner := TokenizeCode(code)
-			got := scanner.tokens
+			got := scanner.LookUp(-1)
 			if len(got.TokenList()) != len(expectedTokens) {
 				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got.TokenList()), expectedTokens, got.TokenList())
 			}

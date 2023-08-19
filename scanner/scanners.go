@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
 	"strings"
@@ -10,16 +11,22 @@ import (
 type Scanner struct {
 	tokens  CodeToken
 	current int
+
+	tokenStream <-chan CodeToken
 }
 
 func (s *Scanner) CurrentTokenInfo() TokenInfo {
 	if s.current == len(s.tokens) {
-		lastTok := s.tokens[s.current-1]
-		return TokenInfo{
-			token: tokens.EOF,
-			from:  lastTok.ToPos(),
-			to:    lastTok.ToPos(),
+		nextToken, chanIsOpen := <-s.tokenStream
+		if !chanIsOpen {
+			lastTok := s.tokens[s.current-1]
+			return TokenInfo{
+				token: tokens.EOF,
+				from:  lastTok.ToPos(),
+				to:    lastTok.ToPos(),
+			}
 		}
+		s.tokens = append(s.tokens, nextToken...)
 	}
 	return s.tokens[s.current]
 }
@@ -41,10 +48,21 @@ func (s *Scanner) ConsumeToken() tokens.Token {
 	return s.ConsumeTokenInfo().Token()
 }
 func (s *Scanner) LookUp(how int) CodeToken {
-	if s.current+how >= len(s.tokens) {
-		how = len(s.tokens) - s.current
+	if how == 0 {
+		return CodeToken{s.CurrentTokenInfo()}
 	}
-	return s.tokens[s.current : s.current+how]
+	if how == -1 {
+		how = 0
+	}
+	codeToken := make(CodeToken, 1, how+1)
+	codeToken[0] = s.ConsumeTokenInfo()
+	defer func(current int) {
+		s.current = current
+	}(s.current)
+	for s.CurrentToken() != tokens.EOF && (cap(codeToken) != how || how == 0) {
+		codeToken = append(codeToken, s.ConsumeTokenInfo())
+	}
+	return codeToken
 }
 func (s *Scanner) LookUpTokens(how int) []tokens.Token {
 	return s.LookUp(how).TokenList()
@@ -55,47 +73,94 @@ type Tokenizer interface {
 	TokenInfo() TokenInfo
 }
 
-func innerTokenizing(lines []string) CodeToken {
+func innerTokenizing(inputLines <-chan string, output chan<- CodeToken) CodeToken {
 	pos := InteractiveTokenPos()
 	tokenCode := CodeToken{}
 
 	tokenizer := Tokenizer(nil)
-	for pos.line < len(lines) {
-		line := []rune(lines[pos.line] + "\n")
-		if pos.col >= len(line) {
-			pos.line++
-			pos.col = 0
-			continue
-		}
-		r := line[pos.col]
-		if tokenizer == nil {
-			tokenizer = getScannerFor(r)
-			if err, isErr := tokenizer.(error); isErr {
-				panic(err)
-			} else if _, toIgnore := tokenizer.(*ignoringScanner); toIgnore {
-				pos.col++
-				tokenizer = nil
+	var lines []string
+	for line := range inputLines {
+		lines = append(lines, line)
+		for pos.line < len(lines) {
+			line := []rune(lines[pos.line] + "\n")
+			if pos.col >= len(line) {
+				pos.line++
+				pos.col = 0
 				continue
 			}
-		}
+			r := line[pos.col]
+			if tokenizer == nil {
+				tokenizer = getScannerFor(r)
+				if err, isErr := tokenizer.(error); isErr {
+					panic(err)
+				} else if _, toIgnore := tokenizer.(*ignoringScanner); toIgnore {
+					pos.col++
+					tokenizer = nil
+					continue
+				}
+			}
 
-		nextScanner := tokenizer.Tokenize(r, pos)
-		tokenInfo := tokenizer.TokenInfo()
-		if tokenInfo.Token() == tokens.NoInit {
-			panic(fmt.Sprintf("Error for %T with first input: '%v'\n[CONTACT NU CORP]", tokenizer, string(r))) // TODO replace the [CONTACT NU CORP]
+			nextScanner := tokenizer.Tokenize(r, pos)
+			tokenInfo := tokenizer.TokenInfo()
+			if tokenInfo.Token() == tokens.NoInit {
+				panic(fmt.Sprintf("Error for %T with first input: '%v'\n[CONTACT NU CORP]", tokenizer, string(r))) // TODO replace the [CONTACT NU CORP]
+			}
+			if nextScanner == nil {
+				tokenCode = append(tokenCode, tokenInfo)
+			}
+			pos = tokenInfo.to
+			tokenizer = nextScanner
 		}
-		if nextScanner == nil {
-			tokenCode = append(tokenCode, tokenInfo)
+		if tokenizer == nil {
+			output <- tokenCode
+		} else {
+			output <- nil
 		}
-		pos = tokenInfo.to
-		tokenizer = nextScanner
+		tokenCode = nil
 	}
-
+	close(output)
 	return tokenCode
 }
 
-func TokenizeCode(code string) Scanner {
-	return Scanner{innerTokenizing(strings.Split(code, "\n")), 0}
+func TokenizeCode(code string) *Scanner {
+	input := make(chan string)
+	output := make(chan CodeToken)
+	scannerTokens := make(chan CodeToken)
+	go func(input chan<- string, output <-chan CodeToken, scannerTokens chan<- CodeToken) {
+		for _, line := range strings.Split(code, "\n") {
+			input <- line
+			received := <-output
+			if received != nil {
+				scannerTokens <- received
+			}
+		}
+		close(scannerTokens)
+		close(input)
+	}(input, output, scannerTokens)
+
+	go innerTokenizing(input, output)
+	return &Scanner{nil, 0, scannerTokens}
+}
+
+func TokenizeInput(inputStream *bufio.Scanner) *Scanner {
+	input := make(chan string)
+	output := make(chan CodeToken)
+	scannerTokens := make(chan CodeToken)
+
+	go func(input chan<- string, output <-chan CodeToken, scannerTokens chan<- CodeToken) {
+		for inputStream.Scan() {
+			line := inputStream.Text()
+			input <- line
+			received := <-output
+			if received != nil {
+				scannerTokens <- received
+			}
+		}
+		close(scannerTokens)
+		close(input)
+	}(input, output, scannerTokens)
+	go innerTokenizing(input, output)
+	return &Scanner{tokenStream: scannerTokens}
 }
 
 type tokenizeEndOfInstruction struct {
