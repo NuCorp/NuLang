@@ -150,6 +150,10 @@ func (p *Parser) parseTupleExpr(oparen scanner.TokenPos) ast.Ast {
 	return tuple
 }
 
+func (p *Parser) parseLStructExpr(OpeningKw scanner.TokenPos, Obrace tokens.Token) ast.Ast {
+	return nil
+}
+
 func (p *Parser) parseSingleExpr() ast.Ast {
 	var expr ast.Ast
 	switch p.scanner.CurrentToken() {
