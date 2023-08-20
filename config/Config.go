@@ -1,23 +1,27 @@
 package config
 
-type Kind string
+type ToolMode string
 
 const (
-	Interpreter = Kind("interpreter")
-	Compiler    = Kind("compiler")
-	Interactive = Kind("interactive")
+	ModeInterpreter = ToolMode("interpreter")
+	ModeCompiler    = ToolMode("compiler")
+	ModeInteractive = ToolMode("interactive")
 )
 
 type ToolInfo struct {
-	kind Kind
+	kind               ToolMode
+	interactiveElement chan any
 }
 
-func (t ToolInfo) WithKind(kind Kind) ToolInfo {
-	t.kind = kind
-	return t
-}
-func (t ToolInfo) Kind() Kind {
+func (t ToolInfo) Mode() ToolMode {
 	return t.kind
+}
+
+func Interactive() ToolInfo {
+	return ToolInfo{
+		kind:               ModeInteractive,
+		interactiveElement: make(chan any),
+	}
 }
 
 const InteractiveFile = ".interactive.temp.nu"

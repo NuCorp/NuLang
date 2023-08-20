@@ -17,6 +17,8 @@ type Parser struct {
 	errors map[scanner.TokenPos]error
 
 	astFile []ast.Ast
+
+	output chan ast.Ast
 }
 
 type conflictResolver = func(p *Parser) func() ast.Ast
@@ -240,15 +242,21 @@ func (p *Parser) parseInteractive() {
 		p.skipTokens(tokens.EoI()...)
 		if resolver, found := conflictFor[p.scanner.CurrentToken()]; found {
 			parser := resolver(p)
-			p.astFile = append(p.astFile, parser())
+			astElem := parser()
+			p.astFile = append(p.astFile, astElem)
+			p.output <- astElem
 			continue
 		}
 		if p.canStartExpr() {
-			p.astFile = append(p.astFile, p.parseExpr())
+			astElem := p.parseExpr()
+			p.astFile = append(p.astFile, astElem)
+			p.output <- astElem
 			continue
 		}
 		if p.scanner.CurrentToken() == tokens.VAR {
-			p.astFile = append(p.astFile, p.parseDef())
+			astElem := p.parseDef()
+			p.astFile = append(p.astFile, astElem)
+			p.output <- astElem
 			continue
 		}
 		if p.scanner.CurrentToken() == tokens.EOF {
@@ -257,6 +265,7 @@ func (p *Parser) parseInteractive() {
 		p.addError(fmt.Errorf("invalid token `%v` to start an interactive instruction", p.scanner.ConsumeToken()))
 		p.skipTo(tokens.EoI()...)
 	}
+	close(p.output)
 }
 
 func (p *Parser) skipTo(tokenOpt ...tokens.Token) {
@@ -270,14 +279,15 @@ func (p *Parser) skipTokens(tokenList ...tokens.Token) {
 	}
 }
 
-func Parse(s scanner.Scanner, conf config.ToolInfo) ([]ast.Ast, map[scanner.TokenPos]error) {
-	p := Parser{}
+func Parse(s *scanner.Scanner, conf config.ToolInfo) (chan ast.Ast, map[scanner.TokenPos]error) {
+	p := Parser{output: make(chan ast.Ast)}
 	p.errors = map[scanner.TokenPos]error{}
-	p.scanner = &s
-	if conf.Kind() == config.Interactive {
-		p.parseInteractive()
-		return p.astFile, p.errors
+	p.scanner = s
+	if conf.Mode() == config.ModeInteractive {
+		go p.parseInteractive()
+		return p.output, p.errors
 	}
 
-	return nil, p.errors
+	close(p.output)
+	return p.output, p.errors
 }

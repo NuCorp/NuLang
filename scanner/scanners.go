@@ -19,6 +19,9 @@ func (s *Scanner) CurrentTokenInfo() TokenInfo {
 	if s.current == len(s.tokens) {
 		nextToken, chanIsOpen := <-s.tokenStream
 		if !chanIsOpen {
+			if len(s.tokens) == 0 {
+				return TokenInfo{token: tokens.EOF}
+			}
 			lastTok := s.tokens[s.current-1]
 			return TokenInfo{
 				token: tokens.EOF,
@@ -150,6 +153,9 @@ func TokenizeInput(inputStream *bufio.Scanner) *Scanner {
 	go func(input chan<- string, output <-chan CodeToken, scannerTokens chan<- CodeToken) {
 		for inputStream.Scan() {
 			line := inputStream.Text()
+			if strings.HasSuffix(line, "#$top") {
+				break
+			}
 			input <- line
 			received := <-output
 			if received != nil {
@@ -206,7 +212,7 @@ func getScannerFor(r rune) Tokenizer {
 	case ' ', '\t':
 		return new(ignoringScanner)
 	}
-	return new(errorScanner)
+	return &errorScanner{input: r}
 }
 
 type ignoringScanner struct{}
@@ -218,8 +224,11 @@ func (s ignoringScanner) TokenInfo() TokenInfo {
 	return TokenInfo{}
 }
 
-type errorScanner struct{ ignoringScanner }
+type errorScanner struct {
+	ignoringScanner
+	input rune
+}
 
-func (*errorScanner) Error() string {
-	return "unavailable scanner"
+func (err *errorScanner) Error() string {
+	return fmt.Sprintf("unavailable scanner for input: '%v'", string(err.input))
 }
