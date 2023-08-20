@@ -151,7 +151,7 @@ func (s *SubBinding) String() string {
 		str += fmt.Sprintf("%v, ", element)
 	}
 	str = strings.TrimSuffix(str, ", ")
-	return str + fmt.Sprintf("%v: %v", s.Closing, s.AttributeName)
+	return str + fmt.Sprintf("%v: .%v", s.Closing, s.AttributeName)
 }
 
 func (s *SubBinding) AddBindingElement(element BindingElement) {

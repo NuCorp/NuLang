@@ -89,11 +89,15 @@ func (p *Parser) parseSubBindingElem(opening scanner.TokenInfo) *ast.SubBinding 
 				continue
 			}
 			lastSubBinding().Closing = p.scanner.ConsumeToken()
-			if container.Eq(p.scanner.LookUpTokens(2), []tokens.Token{tokens.COLON, tokens.IDENT}) {
+			debug := p.scanner.LookUpTokens(2)
+			_ = debug
+			debug = p.scanner.LookUpTokens(2)
+			if container.Eq(p.scanner.LookUpTokens(2), []tokens.Token{tokens.COLON, tokens.DOT, tokens.IDENT}) {
 				lastSubBinding().Colon = p.scanner.ConsumeToken()
+				p.scanner.ConsumeTokenInfo()
 				lastSubBinding().AttributeName = ast.Ident(p.scanner.ConsumeTokenInfo())
 			} else {
-				p.addError(fmt.Errorf("`: <attribute name>` is required for sub bindings element"))
+				p.addError(fmt.Errorf("`: .<attribute name>` is required for sub bindings element (no tuple or expr allowed)"))
 			}
 			binding := lastSubBinding()
 			subbingins = subbingins[:len(subbingins)-1]
@@ -147,16 +151,16 @@ func (p *Parser) parseNameBindingElem() ast.BindingElement {
 		}
 	}
 
-	if p.scanner.CurrentToken() == tokens.IDENT {
+	if container.Eq(p.scanner.LookUpTokens(1), []tokens.Token{tokens.DOT, tokens.IDENT}) {
 		elem.AttributeName = ast.Ident(p.scanner.CurrentTokenInfo())
-	} else if container.Eq(p.scanner.LookUpTokens(2), []tokens.Token{tokens.OPAREN, tokens.IDENT}) {
-		elem.AttributeName = ast.Ident(p.scanner.LookUp(2)[1])
+	} else if container.Eq(p.scanner.LookUpTokens(2), []tokens.Token{tokens.OPAREN, tokens.DOT, tokens.IDENT}) {
+		elem.AttributeName = ast.Ident(p.scanner.LookUp(3)[2])
 	} else {
-		p.addError(fmt.Errorf("expected an identifier (corresponding to the attribute name) after `:`, but got: %v", p.scanner.CurrentToken()))
+		p.addError(fmt.Errorf("expected a `.` and an identifier (corresponding to the attribute name) after `:`, but got: %v", p.scanner.LookUp(3)))
 		return nil // TODO: ERROR
 	}
 
-	elem.BindingExpr = p.parseExpr() // we are sure the expression starts with an identifier or a tuple with an identifier
+	elem.BindingExpr = p.parseExpr() // we are sure the expression starts with a `.` identifier or a tuple with a `.` identifier
 	// if it starts with a tuple we have to make sure it contains only one element (GetRightestElement ?)
 
 	return elem

@@ -120,7 +120,11 @@ func (d *DottedExpr) String() string {
 	if d.RawString {
 		right = "\"" + right + "\""
 	}
-	return fmt.Sprintf("%v.%v", d.Left, right)
+	left := fmt.Sprint(d.Left)
+	if d.Left == nil {
+		left = ""
+	}
+	return fmt.Sprintf("%v.%v", left, right)
 }
 
 type AsExpr struct {

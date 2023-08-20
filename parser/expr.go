@@ -163,6 +163,8 @@ func (p *Parser) parseSingleExpr() ast.Ast {
 		expr = ast.Ident(p.scanner.ConsumeTokenInfo())
 	case tokens.OPAREN:
 		expr = p.parseTupleExpr(p.scanner.ConsumeTokenInfo().FromPos())
+	case tokens.DOT:
+		expr = p.parseDotExpr(nil, p.scanner.ConsumeToken())
 	default:
 		if p.scanner.CurrentToken().IsLiteral() {
 			expr = p.parseLiteralValue()

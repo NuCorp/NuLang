@@ -54,15 +54,20 @@ func (s *Scanner) LookUp(how int) CodeToken {
 	if how == 0 {
 		return CodeToken{s.CurrentTokenInfo()}
 	}
+
 	if how == -1 {
 		how = 0
 	}
-	codeToken := make(CodeToken, 1, how+1)
-	codeToken[0] = s.ConsumeTokenInfo()
+
 	defer func(current int) {
 		s.current = current
 	}(s.current)
-	for s.CurrentToken() != tokens.EOF && (cap(codeToken) != how || how == 0) {
+
+	codeToken := make(CodeToken, 1, how+1)
+
+	codeToken[0] = s.ConsumeTokenInfo()
+
+	for s.CurrentToken() != tokens.EOF && (len(codeToken) != cap(codeToken) || how == 0) {
 		codeToken = append(codeToken, s.ConsumeTokenInfo())
 	}
 	return codeToken
