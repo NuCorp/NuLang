@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils"
@@ -96,7 +97,7 @@ func (p *Parser) parseSingedExpr() ast.Ast {
 	return signed
 }
 
-func (p *Parser) parseDotExpr(left ast.Ast, dot tokens.Token) ast.Ast {
+func (p *Parser) parseDotExpr(left ast.Ast, dot tokens.Token) *ast.DottedExpr {
 	dotExpr := &ast.DottedExpr{
 		Left: left,
 		Dot:  dot,
@@ -150,8 +151,42 @@ func (p *Parser) parseTupleExpr(oparen scanner.TokenPos) ast.Ast {
 	return tuple
 }
 
-func (p *Parser) parseLStructExpr(OpeningKw scanner.TokenPos, Obrace tokens.Token) ast.Ast {
-	return nil
+func (p *Parser) parseAnonymousStructExpr(opening scanner.TokenInfo) ast.Ast {
+	lstruct := ast.AnonymousStructExpr{Opening: opening.FromPos()}
+	if tok := p.scanner.CurrentToken(); tok == tokens.OBRAC {
+		p.scanner.ConsumeTokenInfo()
+	} else {
+		p.addError(fmt.Errorf("missing token `{` to start an anonymous structure expression (got `%v`)", tok))
+	}
+
+	for p.scanner.CurrentToken() != tokens.CBRAC && p.scanner.CurrentToken() != tokens.EOF {
+		if p.scanner.CurrentToken() != tokens.STAR {
+			p.addError(fmt.Errorf("anonymouse structure expression must use binding to name"))
+			p.addError(fmt.Errorf("syntax is: `*` `IDENT` (`:` Expr)? "))
+		}
+		lstruct.Fields = append(lstruct.Fields, p.parseBindToNameStmt(p.scanner.ConsumeTokenInfo().FromPos()))
+
+		if p.scanner.CurrentToken() != tokens.COMA && p.scanner.CurrentToken() != tokens.CBRAC {
+			p.addError(fmt.Errorf("unexpected `%v` at the end of a name binding match", p.scanner.ConsumeToken()))
+			p.skipTo(tokens.COMA, tokens.CBRAC)
+		}
+		if p.scanner.CurrentToken() == tokens.COMA {
+			p.skipTokens(tokens.COMA, tokens.NL)
+			continue
+		}
+	}
+	if p.scanner.CurrentToken() == tokens.EOF {
+		p.addError(fmt.Errorf("unexpected end of file - unterminated anonymous struct expression"))
+	}
+	lstruct.Closing = p.scanner.ConsumeTokenInfo().ToPos()
+	if opening.Token() == tokens.OBRAC && p.scanner.CurrentToken() != tokens.CBRAC {
+		p.addError(fmt.Errorf("unterminated anonymous structure. Expected '}}' but got only '}'"))
+		return lstruct
+	}
+	if opening.Token() == tokens.OBRAC {
+		lstruct.Closing = p.scanner.ConsumeTokenInfo().ToPos()
+	}
+	return lstruct
 }
 
 func (p *Parser) parseSingleExpr() ast.Ast {
@@ -165,6 +200,12 @@ func (p *Parser) parseSingleExpr() ast.Ast {
 		expr = p.parseTupleExpr(p.scanner.ConsumeTokenInfo().FromPos())
 	case tokens.DOT:
 		expr = p.parseDotExpr(nil, p.scanner.ConsumeToken())
+	case tokens.OBRAC, tokens.STRUCT:
+		if container.Contains(p.scanner.LookUpTokens(2), tokens.STAR) { // struct{* or {{*
+			expr = p.parseAnonymousStructExpr(p.scanner.ConsumeTokenInfo())
+		} else {
+			expr = p.parseAnonymousStructType(p.scanner.ConsumeTokenInfo())
+		}
 	default:
 		if p.scanner.CurrentToken().IsLiteral() {
 			expr = p.parseLiteralValue()

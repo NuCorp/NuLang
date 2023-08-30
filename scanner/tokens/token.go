@@ -1,5 +1,7 @@
 package tokens
 
+import "regexp"
+
 type Token int
 
 const EOF = Token(-1)
@@ -140,6 +142,10 @@ const (
 	NL // new line
 )
 
+const (
+	STAR = TIME
+)
+
 func (t Token) String() string {
 	if str, found := tokenStr[t]; found {
 		return str
@@ -160,6 +166,14 @@ func ForEach(forFunction func(token Token)) {
 	for _, token := range strKeyword {
 		forFunction(token)
 	}
+}
+
+func IsIdentifier(str string) bool {
+	matcher, err := regexp.Compile("_[A-Za-z0-9_]+|(__)?[A-Za-z]+[A-Za-z_0-9]*")
+	if err != nil {
+		panic(err)
+	}
+	return matcher.FindString(str) == str
 }
 
 var strKeyword = func() map[string]Token {

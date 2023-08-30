@@ -60,7 +60,7 @@ func (frac Fraction) String() string {
 			break
 		}
 		couple := pair{quotient, rest}
-		if container.Contains(couple, rests) {
+		if container.Contains(rests, couple) {
 			passed := false
 			for _, pair := range rests {
 				if pair == couple {

@@ -8,6 +8,16 @@ import (
 	"unicode"
 )
 
+type Interface interface {
+	CurrentTokenInfo() TokenInfo
+	CurrentToken() tokens.Token
+	CurrentPos() TokenPos
+	ConsumeTokenInfo() TokenInfo
+	ConsumeToken() tokens.Token
+	LookUp(how int) CodeToken
+	LookUpTokens(how int) []tokens.Token
+}
+
 type Scanner struct {
 	tokens  CodeToken
 	current int
@@ -74,6 +84,53 @@ func (s *Scanner) LookUp(how int) CodeToken {
 }
 func (s *Scanner) LookUpTokens(how int) []tokens.Token {
 	return s.LookUp(how).TokenList()
+}
+func (s *Scanner) Copy() *Copy {
+	return &Copy{
+		savedCurrent: s.current,
+		current:      s.current,
+		ref:          s,
+	}
+}
+
+type Copy struct {
+	savedCurrent int
+	current      int
+	ref          *Scanner
+}
+
+func (c *Copy) CurrentTokenInfo() TokenInfo {
+	defer func() {
+		c.ref.current = c.savedCurrent
+	}()
+	c.ref.current = c.current
+	return c.ref.CurrentTokenInfo()
+}
+func (c *Copy) CurrentToken() tokens.Token {
+	return c.CurrentTokenInfo().Token()
+}
+func (c *Copy) CurrentPos() TokenPos {
+	return c.CurrentTokenInfo().FromPos()
+}
+func (c *Copy) ConsumeTokenInfo() TokenInfo {
+	defer func() {
+		c.current = c.ref.current
+		c.ref.current = c.savedCurrent
+	}()
+	return c.CurrentTokenInfo()
+}
+func (c *Copy) ConsumeToken() tokens.Token {
+	return c.ConsumeTokenInfo().Token()
+}
+func (c *Copy) LookUp(how int) CodeToken {
+	return c.ref.LookUp(how)
+}
+func (c *Copy) LookUpTokens(how int) []tokens.Token {
+	return c.LookUp(how).TokenList()
+}
+func (c *Copy) Copy() *Copy {
+	copy := *c
+	return &copy
 }
 
 type Tokenizer interface {

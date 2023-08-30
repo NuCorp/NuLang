@@ -170,3 +170,23 @@ func (t TupleExpr) String() string {
 
 	return strings.TrimSuffix(str, ", ") + ")"
 }
+
+type AnonymousStructExpr struct {
+	Opening scanner.TokenPos
+	Fields  []BindToName
+	Closing scanner.TokenPos
+}
+
+func (a AnonymousStructExpr) From() scanner.TokenPos {
+	return a.Opening
+}
+func (a AnonymousStructExpr) To() scanner.TokenPos {
+	return a.Closing
+}
+func (a AnonymousStructExpr) String() string {
+	str := "struct{"
+	for _, field := range a.Fields {
+		str += field.String() + ", "
+	}
+	return strings.TrimSuffix(str, ", ") + "}"
+}

@@ -8,8 +8,8 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
 )
 
-func (p *Parser) parseLStructType(opening scanner.TokenInfo) ast.Ast {
-	lstruct := ast.LStructType{}
+func (p *Parser) parseAnonymousStructType(opening scanner.TokenInfo) ast.Ast {
+	lstruct := ast.AnonymousStructType{}
 	lstruct.Opening = opening.FromPos()
 	hasErr := false
 	if hasErr = p.scanner.CurrentToken() != tokens.OBRAC; hasErr {
@@ -67,7 +67,7 @@ func (p *Parser) parseType() ast.Ast {
 		var typ ast.Ast = ast.Ident(p.scanner.ConsumeTokenInfo())
 		var dot *ast.DottedExpr
 		for p.scanner.CurrentToken() == tokens.DOT {
-			dot = p.parseDotExpr(typ, p.scanner.ConsumeToken()).(*ast.DottedExpr)
+			dot = p.parseDotExpr(typ, p.scanner.ConsumeToken())
 			if dot.RawString {
 				p.errors[dot.Right.Info().FromPos()] = fmt.Errorf("type can't have raw string dot. Maybe you wanted to surround the dotted element with 'typeof()'")
 				dot.Right.Value = "/* Error here > */" + dot.Right.Value
@@ -77,7 +77,7 @@ func (p *Parser) parseType() ast.Ast {
 		return typ
 	case tokens.TYPEOF:
 	case tokens.OBRAC, tokens.STRUCT:
-		return p.parseLStructType(p.scanner.ConsumeTokenInfo())
+		return p.parseAnonymousStructType(p.scanner.ConsumeTokenInfo())
 	case tokens.OBRAK:
 	case tokens.OPAREN:
 
@@ -89,11 +89,11 @@ func (p *Parser) parseType() ast.Ast {
 }
 
 func (p *Parser) canStartType() bool {
-	return container.Contains(p.scanner.CurrentToken(), []tokens.Token{
+	return container.Contains([]tokens.Token{
 		tokens.IDENT,
 		tokens.TYPEOF,
 		tokens.OBRAC, tokens.STRUCT,
 		tokens.OBRAK, tokens.OPAREN,
 		tokens.INTERFACE, tokens.ENUM, tokens.FUNC,
-	})
+	}, p.scanner.CurrentToken())
 }

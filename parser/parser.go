@@ -25,7 +25,7 @@ type conflictResolver = func(p *Parser) func() ast.Ast
 
 var conflictFor = map[tokens.Token]conflictResolver{
 	tokens.IDENT: func(p *Parser) func() ast.Ast {
-		s := *p.scanner
+		s := p.scanner.Copy()
 		for !s.CurrentToken().IsEoI() && s.CurrentToken() != tokens.EOF {
 			if s.ConsumeToken().IsAssignation() {
 				return func() ast.Ast {
@@ -79,12 +79,13 @@ func (p *Parser) parseInteractive() {
 }
 
 func (p *Parser) skipTo(tokenOpt ...tokens.Token) {
-	for p.scanner.CurrentToken() != tokens.EOF && !container.Contains(p.scanner.ConsumeToken(), tokenOpt) {
+	for p.scanner.CurrentToken() != tokens.EOF && !container.Contains(tokenOpt, p.scanner.CurrentToken()) {
+		p.scanner.ConsumeTokenInfo()
 	}
 }
 
 func (p *Parser) skipTokens(tokenList ...tokens.Token) {
-	for container.Contains(p.scanner.CurrentToken(), tokenList) {
+	for container.Contains(tokenList, p.scanner.CurrentToken()) {
 		p.scanner.ConsumeToken()
 	}
 }

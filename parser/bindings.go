@@ -201,3 +201,47 @@ func (p *Parser) parseBinding(star scanner.TokenInfo, isVar bool) ast.VarElem {
 		return nil
 	}
 }
+
+func (p *Parser) parseBindToNameStmt(star scanner.TokenPos) (toName ast.BindToName) {
+	defer func() {
+		if p.scanner.CurrentToken() != tokens.ELLIPSIS {
+			return
+		}
+		if toName.Value != nil {
+			p.addError(fmt.Errorf("unexpected `...` - unstack name matching usage is: `*`Value`...`"))
+		}
+		toName.Unstack = p.scanner.ConsumeTokenInfo().ToPos()
+	}()
+	toName = ast.BindToName{Star: star}
+	var ident ast.Ident
+	if p.scanner.CurrentToken() == tokens.IDENT {
+		ident = ast.Ident(p.scanner.ConsumeTokenInfo())
+	}
+	if p.scanner.CurrentToken() == tokens.DOT {
+		var left ast.Ast
+		if ident != (ast.Ident{}) {
+			left = ident
+		}
+		dot := p.parseDotExpr(left, p.scanner.ConsumeToken())
+		toName.Value = dot
+		if dot.RawString && !tokens.IsIdentifier(dot.Right.Value) {
+			p.addError(fmt.Errorf("\"%v\" should match the identifier restrictions", dot.Right.Value))
+		} else {
+			toName.Name = ast.Ident(dot.Right.Info())
+		}
+		if dot.RawString && p.scanner.CurrentToken() == tokens.NOT {
+			p.scanner.ConsumeToken()
+			// TODO: toName.Value = ast.ForceNotNil(toName.Value, p.scanner.ConsumeTokenInfo().ToPos())
+		}
+		return toName
+	}
+
+	toName.Name = ident
+	if p.scanner.CurrentToken() != tokens.COLON {
+		return toName
+	}
+
+	p.scanner.ConsumeToken()
+	toName.Value = p.parseExpr()
+	return toName
+}
