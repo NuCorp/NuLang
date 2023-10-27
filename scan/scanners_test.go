@@ -1,12 +1,12 @@
-package scanner
+package scan
 
 import (
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"math/rand"
 	"testing"
 )
 
-func TestTokenizeCodeLiterals(t *testing.T) {
+func TestCodeLiterals(t *testing.T) {
 	run := func(code, expected string, tokenList ...tokens.Token) func(t *testing.T) {
 		return func(t *testing.T) {
 			defer func() {
@@ -15,7 +15,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 					t.Error(err)
 				}
 			}()
-			scanner := TokenizeCode(code)
+			scanner := Code(code)
 			scanCode := scanner.LookUp(-1)
 			got := scanCode.String()
 			if got != expected {
@@ -35,7 +35,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 
 	t.Run("simple integer 1", func(t *testing.T) {
 		code := "18"
-		got := TokenizeCode(code).LookUp(1).String()
+		got := Code(code).LookUp(1).String()
 		expected := "18 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -43,7 +43,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 2", func(t *testing.T) {
 		code := "31"
-		got := TokenizeCode(code).LookUp(1).String()
+		got := Code(code).LookUp(1).String()
 		expected := "31 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -51,7 +51,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 3", func(t *testing.T) {
 		code := "42"
-		got := TokenizeCode(code).LookUp(1).String()
+		got := Code(code).LookUp(1).String()
 		expected := "42 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -59,7 +59,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("simple integer 4", func(t *testing.T) {
 		code := "23"
-		got := TokenizeCode(code).LookUp(1).String()
+		got := Code(code).LookUp(1).String()
 		expected := "23 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -67,7 +67,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("binary format", func(t *testing.T) {
 		code := "0b010"
-		got := TokenizeCode(code).LookUp(1).String()
+		got := Code(code).LookUp(1).String()
 		expected := "2 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -75,7 +75,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("octal format", func(t *testing.T) {
 		code := "0o70"
-		got := TokenizeCode(code).LookUp(1).String()
+		got := Code(code).LookUp(1).String()
 		expected := "56 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -83,7 +83,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	})
 	t.Run("hex format", func(t *testing.T) {
 		code := "0x0A0"
-		got := TokenizeCode(code).LookUp(1).String()
+		got := Code(code).LookUp(1).String()
 		expected := "160 "
 		if got != expected {
 			t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
@@ -114,7 +114,7 @@ func TestTokenizeCodeLiterals(t *testing.T) {
 	// t.Run("large string with special escape", run(`"""\	ok\ """`, `"ok" `, tokens.STR)) // Nu 1.0
 }
 
-func TestTokenizeCodeOperators(t *testing.T) {
+func TestCodeOperators(t *testing.T) {
 	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
 		return func(t *testing.T) {
 			defer func() {
@@ -122,8 +122,8 @@ func TestTokenizeCodeOperators(t *testing.T) {
 					t.Error(err)
 				}
 			}()
-
-			scanner := TokenizeCode(code)
+			//expectedTokens = append(expectedTokens)
+			scanner := Code(code)
 			got := scanner.LookUp(-1)
 			if len(got.TokenList()) != len(expectedTokens) {
 				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got.TokenList())
@@ -152,7 +152,7 @@ func TestTokenizeCodeOperators(t *testing.T) {
 	t.Run("period error", run("..+", tokens.ERR, tokens.PLUS))
 }
 
-func TestTokenizeCodeText(t *testing.T) {
+func TestCodeText(t *testing.T) {
 	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
 		return func(t *testing.T) {
 			defer func() {
@@ -161,7 +161,7 @@ func TestTokenizeCodeText(t *testing.T) {
 				}
 			}()
 
-			scanner := TokenizeCode(code)
+			scanner := Code(code)
 			got := scanner.LookUp(-1)
 			if len(got.TokenList()) != len(expectedTokens) {
 				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got.TokenList()), expectedTokens, got.TokenList())
@@ -198,7 +198,7 @@ func TestTokenizeCodeText(t *testing.T) {
 	})
 }
 
-func TestTokenizeCode(t *testing.T) {
+func TestCode(t *testing.T) {
 	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
 		return func(t *testing.T) {
 			defer func() {
@@ -207,7 +207,7 @@ func TestTokenizeCode(t *testing.T) {
 				}
 			}()
 
-			scanner := TokenizeCode(code)
+			scanner := Code(code)
 			got := scanner.LookUp(-1)
 			if len(got.TokenList()) != len(expectedTokens) {
 				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got.TokenList()), expectedTokens, got.TokenList())

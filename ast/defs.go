@@ -2,22 +2,22 @@ package ast
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"strings"
 )
 
 type VarList struct {
-	Keyword scanner.TokenPos
+	Keyword scan.TokenPos
 	count   int
 
 	Vars []VarElem
 }
 
-func (v *VarList) From() scanner.TokenPos {
+func (v *VarList) From() scan.TokenPos {
 	return v.Keyword
 }
-func (v *VarList) To() scanner.TokenPos {
+func (v *VarList) To() scan.TokenPos {
 	return v.Vars[v.count].To()
 }
 func (v *VarList) AddVars(vars ...VarElem) {
@@ -44,10 +44,10 @@ type NamedDef struct {
 	Value  Ast // TODO Expr
 }
 
-func (n *NamedDef) From() scanner.TokenPos {
+func (n *NamedDef) From() scan.TokenPos {
 	return n.Name.from.FromPos()
 }
-func (n *NamedDef) To() scanner.TokenPos {
+func (n *NamedDef) To() scan.TokenPos {
 	if n.Value != nil {
 		return n.To()
 	}
@@ -67,7 +67,7 @@ func (n *NamedDef) String() string {
 func (*NamedDef) varElem() {}
 
 type NameBinding struct {
-	Star        scanner.TokenPos
+	Star        scan.TokenPos
 	OpenBrace   tokens.Token
 	Elements    []BindingElement
 	hasLeft     bool
@@ -78,10 +78,10 @@ type NameBinding struct {
 
 func (*NameBinding) varElem() {}
 
-func (n *NameBinding) From() scanner.TokenPos {
+func (n *NameBinding) From() scan.TokenPos {
 	return n.Star
 }
-func (n *NameBinding) To() scanner.TokenPos {
+func (n *NameBinding) To() scan.TokenPos {
 	return n.Value.To()
 }
 func (n *NameBinding) String() string {
@@ -113,10 +113,10 @@ type NameBindingElem struct {
 
 func (NameBindingElem) bindingElement() {}
 
-func (n NameBindingElem) From() scanner.TokenPos {
+func (n NameBindingElem) From() scan.TokenPos {
 	return n.VariableName.From()
 }
-func (n NameBindingElem) To() scanner.TokenPos {
+func (n NameBindingElem) To() scan.TokenPos {
 	if n.Colon == tokens.NoInit {
 		return n.VariableName.To()
 	}
@@ -131,7 +131,7 @@ func (n NameBindingElem) String() string {
 }
 
 type SubBinding struct {
-	Opening       scanner.TokenInfo
+	Opening       scan.TokenInfo
 	Elements      []BindingElement
 	hasLeft       bool
 	Closing       tokens.Token
@@ -139,10 +139,10 @@ type SubBinding struct {
 	AttributeName Ident // required
 }
 
-func (s *SubBinding) From() scanner.TokenPos {
+func (s *SubBinding) From() scan.TokenPos {
 	return s.Opening.FromPos()
 }
-func (s *SubBinding) To() scanner.TokenPos {
+func (s *SubBinding) To() scan.TokenPos {
 	return s.AttributeName.To()
 }
 func (s *SubBinding) String() string {
@@ -169,15 +169,15 @@ func (*SubBinding) bindingElement() {}
 type BindingLeft struct {
 	VariableName Ident
 	Colon        tokens.Token
-	Ellipsis     scanner.TokenInfo
+	Ellipsis     scan.TokenInfo
 }
 
 func (*BindingLeft) bindingElement() {}
 
-func (b *BindingLeft) From() scanner.TokenPos {
+func (b *BindingLeft) From() scan.TokenPos {
 	return b.VariableName.From()
 }
-func (b *BindingLeft) To() scanner.TokenPos {
+func (b *BindingLeft) To() scan.TokenPos {
 	return b.Ellipsis.ToPos()
 }
 func (b *BindingLeft) String() string {

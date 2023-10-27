@@ -2,14 +2,14 @@ package ast
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"strings"
 )
 
 type Ast interface {
-	From() scanner.TokenPos
-	To() scanner.TokenPos
+	From() scan.TokenPos
+	To() scan.TokenPos
 	String() string
 }
 
@@ -17,16 +17,16 @@ type LiteralExpr[T comparable] struct {
 	Value[T]
 }
 
-func (l LiteralExpr[T]) From() scanner.TokenPos {
+func (l LiteralExpr[T]) From() scan.TokenPos {
 	return l.from.FromPos()
 }
-func (l LiteralExpr[T]) To() scanner.TokenPos {
+func (l LiteralExpr[T]) To() scan.TokenPos {
 	return l.from.ToPos()
 }
 func (l LiteralExpr[T]) String() string {
 	return fmt.Sprint(l.Value.Value)
 }
-func MakeLiteralExpr[T comparable](tokenInfo scanner.TokenInfo) LiteralExpr[T] {
+func MakeLiteralExpr[T comparable](tokenInfo scan.TokenInfo) LiteralExpr[T] {
 	return LiteralExpr[T]{Value: MakeValue[T](tokenInfo)}
 }
 
@@ -36,10 +36,10 @@ type BinOpExpr struct {
 	Priority    int
 }
 
-func (b *BinOpExpr) From() scanner.TokenPos {
+func (b *BinOpExpr) From() scan.TokenPos {
 	return b.Left.From()
 }
-func (b *BinOpExpr) To() scanner.TokenPos {
+func (b *BinOpExpr) To() scan.TokenPos {
 	return b.Right.To()
 }
 func (b *BinOpExpr) String() string {
@@ -55,14 +55,14 @@ func MakeBinOpExpr(left, right Ast, operator tokens.Token, priority int) *BinOpE
 }
 
 type UnOpExpr struct {
-	Operator scanner.TokenInfo
+	Operator scan.TokenInfo
 	Expr     Ast
 }
 
-func (u *UnOpExpr) From() scanner.TokenPos {
+func (u *UnOpExpr) From() scan.TokenPos {
 	return u.Expr.From()
 }
-func (u *UnOpExpr) To() scanner.TokenPos {
+func (u *UnOpExpr) To() scan.TokenPos {
 	return u.Operator.ToPos()
 }
 func (u *UnOpExpr) String() string {
@@ -70,29 +70,29 @@ func (u *UnOpExpr) String() string {
 }
 
 type SingedValue struct {
-	Minus scanner.TokenPos
+	Minus scan.TokenPos
 	Value Ast
 }
 
-func (s *SingedValue) From() scanner.TokenPos {
+func (s *SingedValue) From() scan.TokenPos {
 	return s.Minus
 }
-func (s *SingedValue) To() scanner.TokenPos {
+func (s *SingedValue) To() scan.TokenPos {
 	return s.Value.To()
 }
 func (s *SingedValue) String() string {
 	return fmt.Sprintf("-%v", s.Value)
 }
 
-type Ident scanner.TokenInfo
+type Ident scan.TokenInfo
 
-func (s Ident) tokenInfo() scanner.TokenInfo {
-	return scanner.TokenInfo(s)
+func (s Ident) tokenInfo() scan.TokenInfo {
+	return scan.TokenInfo(s)
 }
-func (s Ident) From() scanner.TokenPos {
+func (s Ident) From() scan.TokenPos {
 	return s.tokenInfo().FromPos()
 }
-func (s Ident) To() scanner.TokenPos {
+func (s Ident) To() scan.TokenPos {
 	return s.tokenInfo().ToPos()
 }
 func (s Ident) String() string {
@@ -106,10 +106,10 @@ type DottedExpr struct {
 	RawString bool
 }
 
-func (d *DottedExpr) From() scanner.TokenPos {
+func (d *DottedExpr) From() scan.TokenPos {
 	return d.Left.From()
 }
-func (d *DottedExpr) To() scanner.TokenPos {
+func (d *DottedExpr) To() scan.TokenPos {
 	return d.Left.To()
 }
 func (d *DottedExpr) String() string {
@@ -136,10 +136,10 @@ type AsExpr struct {
 	Type Ast
 }
 
-func (a AsExpr) From() scanner.TokenPos {
+func (a AsExpr) From() scan.TokenPos {
 	return a.Expr.From()
 }
-func (a AsExpr) To() scanner.TokenPos {
+func (a AsExpr) To() scan.TokenPos {
 	return a.Type.To()
 }
 func (a AsExpr) String() string {
@@ -151,15 +151,15 @@ func (a AsExpr) String() string {
 }
 
 type TupleExpr struct {
-	OpenParen  scanner.TokenPos
+	OpenParen  scan.TokenPos
 	ExprList   []Ast
-	CloseParen scanner.TokenPos
+	CloseParen scan.TokenPos
 }
 
-func (t TupleExpr) From() scanner.TokenPos {
+func (t TupleExpr) From() scan.TokenPos {
 	return t.OpenParen
 }
-func (t TupleExpr) To() scanner.TokenPos {
+func (t TupleExpr) To() scan.TokenPos {
 	return t.CloseParen
 }
 func (t TupleExpr) String() string {
@@ -172,15 +172,15 @@ func (t TupleExpr) String() string {
 }
 
 type AnonymousStructExpr struct {
-	Opening scanner.TokenPos
+	Opening scan.TokenPos
 	Fields  []BindToName
-	Closing scanner.TokenPos
+	Closing scan.TokenPos
 }
 
-func (a AnonymousStructExpr) From() scanner.TokenPos {
+func (a AnonymousStructExpr) From() scan.TokenPos {
 	return a.Opening
 }
-func (a AnonymousStructExpr) To() scanner.TokenPos {
+func (a AnonymousStructExpr) To() scan.TokenPos {
 	return a.Closing
 }
 func (a AnonymousStructExpr) String() string {

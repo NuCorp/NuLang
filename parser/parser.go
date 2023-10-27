@@ -6,15 +6,15 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"strings"
 )
 
 type Parser struct {
-	scanner *scanner.Scanner
+	scanner scan.Scanner
 
-	errors map[scanner.TokenPos]error
+	errors map[scan.TokenPos]error
 
 	astFile []ast.Ast
 
@@ -25,9 +25,9 @@ type conflictResolver = func(p *Parser) func() ast.Ast
 
 var conflictFor = map[tokens.Token]conflictResolver{
 	tokens.IDENT: func(p *Parser) func() ast.Ast {
-		s := p.scanner.Copy()
-		for !s.CurrentToken().IsEoI() && s.CurrentToken() != tokens.EOF {
-			if s.ConsumeToken().IsAssignation() {
+		nextToken := func(i int) tokens.Token { return p.scanner.Next(i).Token() }
+		for i := 0; !nextToken(i).IsEoI() && nextToken(i) != tokens.EOF; i++ {
+			if nextToken(i).IsAssignation() {
 				return func() ast.Ast {
 					p.skipTo(tokens.EOF)
 					p.errors[p.scanner.CurrentPos()] = fmt.Errorf("conflict not handle yet")
@@ -90,9 +90,18 @@ func (p *Parser) skipTokens(tokenList ...tokens.Token) {
 	}
 }
 
-func Parse(s *scanner.Scanner, conf config.ToolInfo) (chan ast.Ast, map[scanner.TokenPos]error) {
+func (p *Parser) parseFunctionCall(expr ast.Ast, oparent tokens.Token) ast.Ast {
+	funcCall := ast.FunctionCall{
+		Expr:    expr,
+		OParent: oparent,
+	}
+
+	return funcCall
+}
+
+func Parse(s scan.Scanner, conf config.ToolInfo) (chan ast.Ast, map[scan.TokenPos]error) {
 	p := Parser{output: make(chan ast.Ast)}
-	p.errors = map[scanner.TokenPos]error{}
+	p.errors = map[scan.TokenPos]error{}
 	p.scanner = s
 	if conf.Mode() == config.ModeInteractive {
 		go p.parseInteractive()

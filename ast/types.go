@@ -2,7 +2,7 @@ package ast
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 )
 
 type Type interface {
@@ -19,17 +19,17 @@ type DottedType struct {
 func (DottedType) typeInterface() {}
 
 type AnonymousStructType struct {
-	Opening    scanner.TokenPos
+	Opening    scan.TokenPos
 	Attributes []*NamedDef
 	Getter     []bool // Getter.Length == Attribute.Length
-	Ending     scanner.TokenPos
+	Ending     scan.TokenPos
 }
 
 func (AnonymousStructType) typeInterface() {}
-func (s AnonymousStructType) From() scanner.TokenPos {
+func (s AnonymousStructType) From() scan.TokenPos {
 	return s.Opening
 }
-func (s AnonymousStructType) To() scanner.TokenPos {
+func (s AnonymousStructType) To() scan.TokenPos {
 	return s.Ending
 }
 func (s AnonymousStructType) String() string {

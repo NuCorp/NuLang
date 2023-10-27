@@ -2,23 +2,23 @@ package ast
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 type BindToName struct {
-	Star    scanner.TokenPos
+	Star    scan.TokenPos
 	Name    Ident
 	Colon   tokens.Token
-	Value   Ast              // may be nil if Colon == tokens.NoInit
-	Unstack scanner.TokenPos // may be invalid
+	Value   Ast           // may be nil if Colon == tokens.NoInit
+	Unstack scan.TokenPos // may be invalid
 }
 
-func (b BindToName) From() scanner.TokenPos {
+func (b BindToName) From() scan.TokenPos {
 	return b.Star
 }
-func (b BindToName) To() scanner.TokenPos {
-	if b.Unstack != scanner.InvalidTokenPos() {
+func (b BindToName) To() scan.TokenPos {
+	if b.Unstack != scan.InvalidTokenPos() {
 		return b.Unstack
 	}
 	if b.Value != nil {
@@ -32,7 +32,7 @@ func (b BindToName) String() string {
 	if b.Value != nil {
 		return str + fmt.Sprintf(": %v", b.Value)
 	}
-	if b.Unstack != scanner.InvalidTokenPos() {
+	if b.Unstack != scan.InvalidTokenPos() {
 		str += "..."
 	}
 	return str

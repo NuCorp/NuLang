@@ -1,7 +1,7 @@
-package scanner
+package scan
 
 import (
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"strings"
 )
 

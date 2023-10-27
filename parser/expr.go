@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils"
 )
 
@@ -132,7 +132,7 @@ func (p *Parser) parseAsExpr(left ast.Ast, as tokens.Token) ast.Ast {
 	return asExpr
 }
 
-func (p *Parser) parseTupleExpr(oparen scanner.TokenPos) ast.Ast {
+func (p *Parser) parseTupleExpr(oparen scan.TokenPos) ast.Ast {
 	tuple := ast.TupleExpr{OpenParen: oparen}
 	for p.scanner.CurrentToken() != tokens.CPAREN && p.scanner.CurrentToken() != tokens.EOF {
 		p.skipTokens(tokens.NL)
@@ -151,7 +151,7 @@ func (p *Parser) parseTupleExpr(oparen scanner.TokenPos) ast.Ast {
 	return tuple
 }
 
-func (p *Parser) parseAnonymousStructExpr(opening scanner.TokenInfo) ast.Ast {
+func (p *Parser) parseAnonymousStructExpr(opening scan.TokenInfo) ast.Ast {
 	lstruct := ast.AnonymousStructExpr{Opening: opening.FromPos()}
 	if tok := p.scanner.CurrentToken(); tok == tokens.OBRAC {
 		p.scanner.ConsumeTokenInfo()
@@ -221,6 +221,8 @@ afterExpr:
 			expr = p.parseDotExpr(expr, p.scanner.ConsumeToken())
 		case tokens.AS:
 			expr = p.parseAsExpr(expr, p.scanner.ConsumeToken())
+		case tokens.OPAREN:
+			expr = p.parseFunctionCall(expr, p.scanner.ConsumeToken())
 		default:
 			break afterExpr
 		}

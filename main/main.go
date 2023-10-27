@@ -6,8 +6,8 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"os"
 )
 
@@ -40,19 +40,20 @@ func main() {
 	//Input()
 	//return
 
-	code := scanner.TokenizeCode(`
+	code := scan.Code(`
 var b = {{*b: {{*a: 42}}}}
 var *{{a}: .b, {{a}: .b}: .c, d: (.a.b as int).Square} = {{*b, *c: {{*b}}, *a: {{*b: 18.31}}}}
 
 var a = 4 + 5 * 6 + (a.b as! int as float).c
 var b = (42, 18),
 c = {{*a: 42, *b."c"!, *d}}, d = {{*a, *b, *left...}}
+
 `[1:])
 	ast, errs := parser.Parse(code, config.Interactive())
 	printAstResults(ast, errs)
 }
 
-func printAstResults(ast chan ast.Ast, errs map[scanner.TokenPos]error) {
+func printAstResults(ast chan ast.Ast, errs map[scan.TokenPos]error) {
 	for elem := range ast {
 		fmt.Println(elem)
 	}
@@ -64,6 +65,6 @@ func printAstResults(ast chan ast.Ast, errs map[scanner.TokenPos]error) {
 
 func Input() {
 	input := bufio.NewScanner(os.Stdin)
-	ast, errs := parser.Parse(scanner.TokenizeInput(input), config.Interactive())
+	ast, errs := parser.Parse(scan.TokenizeInput(input), config.Interactive())
 	printAstResults(ast, errs)
 }

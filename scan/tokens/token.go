@@ -193,6 +193,7 @@ func GetKeywordForText(text string) Token {
 }
 
 var tokenStr = map[Token]string{
+	EOF: "EOF",
 	ERR: "TokenError",
 
 	IDENT:    "Identifier",

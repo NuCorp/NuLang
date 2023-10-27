@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
-func (p *Parser) parseSubBindingElem(opening scanner.TokenInfo) *ast.SubBinding {
+func (p *Parser) parseSubBindingElem(opening scan.TokenInfo) *ast.SubBinding {
 	subbinding := &ast.SubBinding{
 		Opening: opening,
 	}
@@ -127,7 +127,7 @@ func (p *Parser) parseNameBindingElem() ast.BindingElement {
 	return elem
 }
 
-func (p *Parser) parseNameBinding(star, obrace scanner.TokenInfo, isVar bool) *ast.NameBinding {
+func (p *Parser) parseNameBinding(star, obrace scan.TokenInfo, isVar bool) *ast.NameBinding {
 	nameBinding := &ast.NameBinding{
 		Star:      star.FromPos(),
 		OpenBrace: obrace.Token(),
@@ -192,7 +192,7 @@ func (p *Parser) parseNameBinding(star, obrace scanner.TokenInfo, isVar bool) *a
 	return nameBinding
 }
 
-func (p *Parser) parseBinding(star scanner.TokenInfo, isVar bool) ast.VarElem {
+func (p *Parser) parseBinding(star scan.TokenInfo, isVar bool) ast.VarElem {
 	switch p.scanner.CurrentToken() {
 	case tokens.OBRAC:
 		return p.parseNameBinding(star, p.scanner.ConsumeTokenInfo(), isVar)
@@ -202,7 +202,7 @@ func (p *Parser) parseBinding(star scanner.TokenInfo, isVar bool) ast.VarElem {
 	}
 }
 
-func (p *Parser) parseBindToNameStmt(star scanner.TokenPos) (toName ast.BindToName) {
+func (p *Parser) parseBindToNameStmt(star scan.TokenPos) (toName ast.BindToName) {
 	defer func() {
 		if p.scanner.CurrentToken() != tokens.ELLIPSIS {
 			return

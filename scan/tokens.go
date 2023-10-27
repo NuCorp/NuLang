@@ -1,10 +1,10 @@
-package scanner
+package scan
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 type TokenPos struct {

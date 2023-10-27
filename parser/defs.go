@@ -3,8 +3,8 @@ package parser
 import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 func (p *Parser) parseSimpleVars() (varElemList []ast.VarElem) {
@@ -53,7 +53,7 @@ func (p *Parser) parseSimpleVars() (varElemList []ast.VarElem) {
 	panic("unreachable")
 }
 
-func (p *Parser) parseVars(kw scanner.TokenInfo) ast.Ast {
+func (p *Parser) parseVars(kw scan.TokenInfo) ast.Ast {
 	vars := &ast.VarList{Keyword: kw.FromPos()}
 varElemLoop:
 	for !p.scanner.CurrentToken().IsEoI() && p.scanner.CurrentToken() != tokens.EOF {

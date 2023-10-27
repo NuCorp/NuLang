@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scanner/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
-func (p *Parser) parseAnonymousStructType(opening scanner.TokenInfo) ast.Ast {
+func (p *Parser) parseAnonymousStructType(opening scan.TokenInfo) ast.Ast {
 	lstruct := ast.AnonymousStructType{}
 	lstruct.Opening = opening.FromPos()
 	hasErr := false
