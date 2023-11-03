@@ -61,6 +61,30 @@ func (p *Parser) parseAnonymousStructType(opening scan.TokenInfo) ast.Ast {
 	return lstruct
 }
 
+func (p *Parser) parseTypeof(t scan.TokenInfo) *ast.TypeOf {
+	typeof := &ast.TypeOf{Typeof: t}
+
+	if p.scanner.CurrentToken() == tokens.PLUS {
+		panic("not handle yet") // TODO
+	}
+
+	if p.scanner.CurrentToken() != tokens.OPAREN {
+		p.addError(fmt.Errorf("missing required `(` after the `typeof` keyword (got: %v)", p.scanner.CurrentToken()))
+		return nil
+	}
+	typeof.OParent = p.scanner.ConsumeToken()
+
+	typeof.Expr = p.parseExpr()
+
+	if p.scanner.CurrentToken() != tokens.CPAREN {
+		p.addError(fmt.Errorf("unclosing parentheses (expected `)` but got `%v`", p.scanner.CurrentToken()))
+		return typeof
+	}
+	typeof.CParent = p.scanner.ConsumeTokenInfo()
+
+	return typeof
+}
+
 func (p *Parser) parseType() ast.Ast {
 	switch p.scanner.CurrentToken() {
 	case tokens.IDENT:

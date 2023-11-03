@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 type Type interface {
@@ -44,8 +45,10 @@ func (s AnonymousStructType) String() string {
 }
 
 type TypeOf struct {
-	Typeof scan.TokenInfo
-	Expr   Ast
+	Typeof  scan.TokenInfo
+	OParent tokens.Token
+	Expr    Ast
+	CParent scan.TokenInfo
 }
 
 func (TypeOf) typeInterface() {}
@@ -54,7 +57,7 @@ func (t TypeOf) From() scan.TokenPos {
 	return t.Typeof.FromPos()
 }
 func (t TypeOf) To() scan.TokenPos {
-	return t.Expr.To()
+	return t.CParent.ToPos()
 }
 
 func (t TypeOf) String() string {
