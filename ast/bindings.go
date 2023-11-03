@@ -37,3 +37,21 @@ func (b BindToName) String() string {
 	}
 	return str
 }
+
+type MatchBinding struct {
+	Star  scan.TokenInfo
+	Ref   string
+	Value Ast
+}
+
+func (m MatchBinding) From() scan.TokenPos {
+	return m.Star.FromPos()
+}
+
+func (m MatchBinding) To() scan.TokenPos {
+	return m.Value.To()
+}
+
+func (m MatchBinding) String() string {
+	return "*" + m.Ref + ": " + m.Value.String()
+}

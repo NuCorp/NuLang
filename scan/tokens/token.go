@@ -160,7 +160,15 @@ func (t Token) IsAssignation() bool {
 	return t >= ASSIGN && t <= OR_ASSIGN
 }
 func (t Token) IsEoI() bool { return t == NL || t == SEMI }
-func EoI() []Token          { return []Token{NL, SEMI} }
+func (t Token) IsOneOf(tok ...Token) bool {
+	for _, tok := range tok {
+		if t == tok {
+			return true
+		}
+	}
+	return false
+}
+func EoI() []Token { return []Token{NL, SEMI} }
 
 func ForEach(forFunction func(token Token)) {
 	for _, token := range strKeyword {

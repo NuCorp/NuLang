@@ -34,11 +34,11 @@ func (f *FunctionCall) OpenParentheses(tok tokens.Token) {
 func (f *FunctionCall) AddOrderArgument(arg Ast) {
 	f.orderedArgs = append(f.orderedArgs, arg)
 }
-func (f *FunctionCall) AddBoundArgument(name string, fullArg Ast) {
+func (f *FunctionCall) AddBoundArgument(arg *MatchBinding) {
 	if f.boundArgs == nil {
 		*f = *NewFunctionCall()
 	}
-	f.boundArgs[name] = fullArg
+	f.boundArgs[arg.Ref] = arg.Value
 }
 func (f *FunctionCall) CloseParentheses(tok scan.TokenInfo) {
 	f.cParent = tok

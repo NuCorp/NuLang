@@ -98,7 +98,7 @@ func (p *Parser) parseFunctionCall(expr ast.Ast, oparent tokens.Token) ast.Ast {
 	for p.scanner.CurrentToken() != tokens.CPAREN {
 		p.skipTokens(tokens.NL)
 		if p.scanner.CurrentToken() == tokens.STAR {
-			// funcCall.AddBoundArgument(p.parseMatchBinding(p.scanner.ConsumeTokenInfo()))
+			funcCall.AddBoundArgument(p.parseMatchBinding(p.scanner.ConsumeTokenInfo()))
 		} else if p.scanner.CurrentToken() != tokens.CPAREN {
 			funcCall.AddOrderArgument(p.parseExpr())
 		}
@@ -106,15 +106,13 @@ func (p *Parser) parseFunctionCall(expr ast.Ast, oparent tokens.Token) ast.Ast {
 			p.scanner.ConsumeToken()
 		} else {
 			p.addError(fmt.Errorf("expected `,` or `)` after function argument but got: %v", p.scanner.CurrentToken()))
-			/*
-				if p.scanner.CurrentToken().IsOneOf(tokens.OBRAK, tokens.OBRAC) {
-					funcCall.SetCParent(p.scanner.ConsumeTokenInfo())
-				} else if p.scanner.CurrentToken().IsOneOf(tokens.SEMI, tokens.DOT, tokens.COLON) {
-					p.scanner.ConsumeToken()
-					continue
-				}
-				break
-			*/
+			if p.scanner.CurrentToken().IsOneOf(tokens.OBRAK, tokens.OBRAC) {
+				funcCall.CloseParentheses(p.scanner.ConsumeTokenInfo())
+			} else if p.scanner.CurrentToken().IsOneOf(tokens.SEMI, tokens.DOT, tokens.COLON) {
+				p.scanner.ConsumeToken()
+				continue
+			}
+			break
 		}
 	}
 

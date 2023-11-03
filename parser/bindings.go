@@ -245,3 +245,26 @@ func (p *Parser) parseBindToNameStmt(star scan.TokenPos) (toName ast.BindToName)
 	toName.Value = p.parseExpr()
 	return toName
 }
+
+func (p *Parser) parseMatchBinding(star scan.TokenInfo) *ast.MatchBinding {
+	binding := &ast.MatchBinding{Star: star}
+	if p.scanner.CurrentToken() != tokens.IDENT {
+		p.addError(fmt.Errorf("need at least one identifier to bind element, but got: %v", p.scanner.CurrentToken()))
+		return nil
+	}
+	ref := p.scanner.ConsumeTokenInfo()
+	binding.Ref = ref.Value().(string)
+	if p.scanner.CurrentToken() == tokens.DOT {
+		value := p.parseDotExpr(ast.Ident(ref), p.scanner.ConsumeToken())
+		binding.Value = value
+		binding.Ref = value.Right.Value
+		return binding
+	}
+	if p.scanner.CurrentToken() == tokens.COLON {
+		p.scanner.ConsumeToken()
+		binding.Value = p.parseExpr()
+		return binding
+	}
+	binding.Value = ast.Ident(ref)
+	return binding
+}
