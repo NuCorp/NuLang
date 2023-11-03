@@ -42,3 +42,21 @@ func (s AnonymousStructType) String() string {
 	}
 	return str + " }"
 }
+
+type TypeOf struct {
+	Typeof scan.TokenInfo
+	Expr   Ast
+}
+
+func (TypeOf) typeInterface() {}
+
+func (t TypeOf) From() scan.TokenPos {
+	return t.Typeof.FromPos()
+}
+func (t TypeOf) To() scan.TokenPos {
+	return t.Expr.To()
+}
+
+func (t TypeOf) String() string {
+	return "typeof(" + t.Expr.String() + ")"
+}
