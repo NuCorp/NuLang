@@ -100,6 +100,7 @@ func (p *Parser) parseType() ast.Ast {
 		}
 		return typ
 	case tokens.TYPEOF:
+		return p.parseTypeof(p.scanner.ConsumeTokenInfo())
 	case tokens.OBRAC, tokens.STRUCT:
 		return p.parseAnonymousStructType(p.scanner.ConsumeTokenInfo())
 	case tokens.OBRAK:
