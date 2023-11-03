@@ -65,7 +65,7 @@ func (p *Parser) parseTypeof(t scan.TokenInfo) *ast.TypeOf {
 	typeof := &ast.TypeOf{Typeof: t}
 
 	if p.scanner.CurrentToken() == tokens.PLUS {
-		panic("not handle yet") // TODO
+		typeof.Static = p.scanner.ConsumeToken()
 	}
 
 	if p.scanner.CurrentToken() != tokens.OPAREN {

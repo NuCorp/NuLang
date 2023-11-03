@@ -47,6 +47,7 @@ func (s AnonymousStructType) String() string {
 type TypeOf struct {
 	Typeof  scan.TokenInfo
 	OParent tokens.Token
+	Static  tokens.Token
 	Expr    Ast
 	CParent scan.TokenInfo
 }
@@ -61,5 +62,9 @@ func (t TypeOf) To() scan.TokenPos {
 }
 
 func (t TypeOf) String() string {
-	return "typeof(" + t.Expr.String() + ")"
+	static := "+"
+	if t.Static != tokens.PLUS {
+		static = ""
+	}
+	return "typeof" + static + "(" + t.Expr.String() + ")"
 }
