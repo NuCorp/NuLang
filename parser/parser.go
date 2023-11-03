@@ -95,7 +95,7 @@ func (p *Parser) parseFunctionCall(expr ast.Ast, oparent tokens.Token) ast.Ast {
 	funcCall.SetCaller(expr)
 	funcCall.OpenParentheses(oparent)
 
-	for p.scanner.CurrentToken() != tokens.CPAREN {
+	for {
 		p.skipTokens(tokens.NL)
 		if p.scanner.CurrentToken() == tokens.STAR {
 			funcCall.AddBoundArgument(p.parseMatchBinding(p.scanner.ConsumeTokenInfo()))
@@ -104,16 +104,20 @@ func (p *Parser) parseFunctionCall(expr ast.Ast, oparent tokens.Token) ast.Ast {
 		}
 		if p.scanner.CurrentToken() == tokens.COMA {
 			p.scanner.ConsumeToken()
-		} else {
-			p.addError(fmt.Errorf("expected `,` or `)` after function argument but got: %v", p.scanner.CurrentToken()))
-			if p.scanner.CurrentToken().IsOneOf(tokens.OBRAK, tokens.OBRAC) {
-				funcCall.CloseParentheses(p.scanner.ConsumeTokenInfo())
-			} else if p.scanner.CurrentToken().IsOneOf(tokens.SEMI, tokens.DOT, tokens.COLON) {
-				p.scanner.ConsumeToken()
-				continue
-			}
+			continue
+		}
+		if p.scanner.CurrentToken() == tokens.CPAREN {
+			funcCall.CloseParentheses(p.scanner.ConsumeTokenInfo())
 			break
 		}
+		p.addError(fmt.Errorf("expected `,` or `)` after function argument but got: %v", p.scanner.CurrentToken()))
+		if p.scanner.CurrentToken().IsOneOf(tokens.OBRAK, tokens.OBRAC) {
+			funcCall.CloseParentheses(p.scanner.ConsumeTokenInfo())
+		} else if p.scanner.CurrentToken().IsOneOf(tokens.SEMI, tokens.DOT, tokens.COLON) {
+			p.scanner.ConsumeToken()
+			continue
+		}
+		break
 	}
 
 	return funcCall
