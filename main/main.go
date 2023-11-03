@@ -41,13 +41,8 @@ func main() {
 	//return
 
 	code := scan.Code(`
-var b = {{*b: {{*a: 42}}}}
-var *{{a}: .b, {{a}: .b}: .c, d: (.a.b as int).Square} = {{*b, *c: {{*b}}, *a: {{*b: 18.31}}}}
-
-var a = 4 + 5 * 6 + (a.b as! int as float).c
-var b = (42, 18),
-c = {{*a: 42, *b."c"!, *d}}, d = {{*a, *b, *left...}}
-
+a.Function(a, *b, *b.c, *d: 42.Square)
+a.Function(a.b, *b.c: 42}
 `[1:])
 	ast, errs := parser.Parse(code, config.Interactive())
 	printAstResults(ast, errs)
