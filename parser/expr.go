@@ -206,6 +206,8 @@ func (p *Parser) parseSingleExpr() ast.Ast {
 		} else {
 			expr = p.parseAnonymousStructType(p.scanner.ConsumeTokenInfo())
 		}
+	case tokens.TYPEOF:
+		expr = p.parseTypeof(p.scanner.ConsumeTokenInfo())
 	default:
 		if p.scanner.CurrentToken().IsLiteral() {
 			expr = p.parseLiteralValue()
