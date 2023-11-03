@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 type Type interface {
@@ -41,4 +42,29 @@ func (s AnonymousStructType) String() string {
 		str += fmt.Sprintf(" %v;", attribute)
 	}
 	return str + " }"
+}
+
+type TypeOf struct {
+	Typeof  scan.TokenInfo
+	OParent tokens.Token
+	Static  tokens.Token
+	Expr    Ast
+	CParent scan.TokenInfo
+}
+
+func (TypeOf) typeInterface() {}
+
+func (t TypeOf) From() scan.TokenPos {
+	return t.Typeof.FromPos()
+}
+func (t TypeOf) To() scan.TokenPos {
+	return t.CParent.ToPos()
+}
+
+func (t TypeOf) String() string {
+	static := "+"
+	if t.Static != tokens.PLUS {
+		static = ""
+	}
+	return "typeof" + static + "(" + t.Expr.String() + ")"
 }

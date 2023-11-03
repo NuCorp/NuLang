@@ -41,8 +41,7 @@ func main() {
 	//return
 
 	code := scan.Code(`
-a.Function(a, *b, *b.c, *d: 42.Square)
-a.Function(a.b, *b.c: 42}
+var a int, b typeof+(43), c typeof(typeof(a).Static.SubType)
 `[1:])
 	ast, errs := parser.Parse(code, config.Interactive())
 	printAstResults(ast, errs)
