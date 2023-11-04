@@ -7,10 +7,14 @@ import (
 )
 
 type Type interface {
+	Ast
 	typeInterface()
 }
 
-type IdentType struct{ Ident }   // TODO use IdentType
+type IdentType struct {
+	Ident
+}
+
 func (IdentType) typeInterface() {}
 
 type DottedType struct {

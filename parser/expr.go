@@ -34,6 +34,12 @@ func samePriority() int {
 }
 
 var priorityForBinOp = map[tokens.Token]int{
+	tokens.EQ:  samePriority(),
+	tokens.NEQ: samePriority(),
+
+	tokens.LOR:  nextPriority(),
+	tokens.LAND: nextPriority(),
+
 	tokens.PLUS:  samePriority(),
 	tokens.MINUS: samePriority(),
 
@@ -189,6 +195,12 @@ func (p *Parser) parseAnonymousStructExpr(opening scan.TokenInfo) ast.Ast {
 	return lstruct
 }
 
+func (p *Parser) parseIsExpr(expr ast.Ast, isToken tokens.Token) *ast.IsExpr {
+	isExpr := &ast.IsExpr{Expr: expr, Is: isToken}
+	isExpr.Type = p.parseType()
+	return isExpr
+}
+
 func (p *Parser) parseSingleExpr() ast.Ast {
 	var expr ast.Ast
 	switch p.scanner.CurrentToken() {
@@ -225,6 +237,8 @@ afterExpr:
 			expr = p.parseAsExpr(expr, p.scanner.ConsumeToken())
 		case tokens.OPAREN:
 			expr = p.parseFunctionCall(expr, p.scanner.ConsumeToken())
+		case tokens.IS:
+			return p.parseIsExpr(expr, p.scanner.ConsumeToken()) // isExpr is a final single expr => binop expr is needed to continue the expr
 		default:
 			break afterExpr
 		}
