@@ -260,20 +260,20 @@ func (p *Parser) parseExpr() ast.Ast {
 }
 
 func (p *Parser) parseLiteralValue() ast.Ast {
-	scan := p.scanner
-	switch scan.CurrentToken() {
+	scanner := p.scanner
+	switch scanner.CurrentToken() {
 	case tokens.INT:
-		return ast.MakeLiteralExpr[uint](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[uint](scanner.ConsumeTokenInfo())
 	case tokens.STR:
-		return ast.MakeLiteralExpr[string](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[string](scanner.ConsumeTokenInfo())
 	case tokens.FLOAT:
-		return ast.MakeLiteralExpr[float64](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[float64](scanner.ConsumeTokenInfo())
 	case tokens.FRACTION:
-		return ast.MakeLiteralExpr[utils.Fraction](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[utils.Fraction](scanner.ConsumeTokenInfo())
 	case tokens.CHAR:
-		return ast.MakeLiteralExpr[rune](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[rune](scanner.ConsumeTokenInfo())
 	case tokens.TRUE, tokens.FALSE:
-		return ast.MakeLiteralExpr[bool](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[bool](scanner.ConsumeTokenInfo())
 	default:
 		panic("invalid call - shouldn't be here") // unreachable
 	}
