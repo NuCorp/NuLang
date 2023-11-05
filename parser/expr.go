@@ -253,6 +253,10 @@ func (p *Parser) parseExpr() ast.Ast {
 		case tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.MOD, tokens.FRAC_DIV,
 			tokens.EQ, tokens.NEQ, tokens.AND, tokens.OR:
 			expr = p.parseBinop(expr, p.scanner.ConsumeToken())
+		case tokens.IS:
+			p.addError(fmt.Errorf("`is` expression is a final single expression"))
+			p.addError(fmt.Errorf("  it can only be used on single expression but is used as complex one"))
+			p.skipTo(append(tokens.EoI(), tokens.COMA)...)
 		default:
 			return expr
 		}
