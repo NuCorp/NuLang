@@ -36,8 +36,8 @@ func (s *tokenizeText) Tokenize(r rune, pos TokenPos) Tokenizer {
 		s.token.from = pos
 		return s.validate(r, pos)
 	}
-	if !unicode.IsLetter(r) && r != '_' {
-		return s.completed()
+	if unicode.IsLetter(r) || r == '_' || (s.token.rawValue != "" && unicode.IsDigit(r)) {
+		return s.validate(r, pos)
 	}
-	return s.validate(r, pos)
+	return s.completed()
 }
