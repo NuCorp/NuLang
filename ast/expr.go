@@ -54,6 +54,22 @@ func MakeBinOpExpr(left, right Ast, operator tokens.Token, priority int) *BinOpE
 	}
 }
 
+type IsExpr struct {
+	Expr Ast
+	Is   tokens.Token
+	Type Type
+}
+
+func (i IsExpr) From() scan.TokenPos {
+	return i.Expr.From()
+}
+func (i IsExpr) To() scan.TokenPos {
+	return i.Type.To()
+}
+func (i IsExpr) String() string {
+	return fmt.Sprintf("%v is %v", i.Expr, i.Type)
+}
+
 type UnOpExpr struct {
 	Operator scan.TokenInfo
 	Expr     Ast

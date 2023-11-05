@@ -34,6 +34,12 @@ func samePriority() int {
 }
 
 var priorityForBinOp = map[tokens.Token]int{
+	tokens.EQ:  samePriority(),
+	tokens.NEQ: samePriority(),
+
+	tokens.OR:  nextPriority(),
+	tokens.AND: nextPriority(),
+
 	tokens.PLUS:  samePriority(),
 	tokens.MINUS: samePriority(),
 
@@ -189,6 +195,12 @@ func (p *Parser) parseAnonymousStructExpr(opening scan.TokenInfo) ast.Ast {
 	return lstruct
 }
 
+func (p *Parser) parseIsExpr(expr ast.Ast, isToken tokens.Token) *ast.IsExpr {
+	isExpr := &ast.IsExpr{Expr: expr, Is: isToken}
+	isExpr.Type = p.parseType()
+	return isExpr
+}
+
 func (p *Parser) parseSingleExpr() ast.Ast {
 	var expr ast.Ast
 	switch p.scanner.CurrentToken() {
@@ -225,6 +237,8 @@ afterExpr:
 			expr = p.parseAsExpr(expr, p.scanner.ConsumeToken())
 		case tokens.OPAREN:
 			expr = p.parseFunctionCall(expr, p.scanner.ConsumeToken())
+		case tokens.IS:
+			return p.parseIsExpr(expr, p.scanner.ConsumeToken()) // isExpr is a final single expr => binop expr is needed to continue the expr
 		default:
 			break afterExpr
 		}
@@ -236,8 +250,13 @@ func (p *Parser) parseExpr() ast.Ast {
 	expr := p.parseSingleExpr()
 	for !p.scanner.CurrentToken().IsEoI() && p.scanner.CurrentToken() != tokens.EOF {
 		switch p.scanner.CurrentToken() {
-		case tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.MOD, tokens.FRAC_DIV:
+		case tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.MOD, tokens.FRAC_DIV,
+			tokens.EQ, tokens.NEQ, tokens.AND, tokens.OR:
 			expr = p.parseBinop(expr, p.scanner.ConsumeToken())
+		case tokens.IS:
+			p.addError(fmt.Errorf("`is` expression is a final single expression"))
+			p.addError(fmt.Errorf("  it can only be used on single expression but is used as complex one"))
+			p.skipTo(append(tokens.EoI(), tokens.COMA)...)
 		default:
 			return expr
 		}
@@ -246,20 +265,20 @@ func (p *Parser) parseExpr() ast.Ast {
 }
 
 func (p *Parser) parseLiteralValue() ast.Ast {
-	scan := p.scanner
-	switch scan.CurrentToken() {
+	scanner := p.scanner
+	switch scanner.CurrentToken() {
 	case tokens.INT:
-		return ast.MakeLiteralExpr[uint](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[uint](scanner.ConsumeTokenInfo())
 	case tokens.STR:
-		return ast.MakeLiteralExpr[string](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[string](scanner.ConsumeTokenInfo())
 	case tokens.FLOAT:
-		return ast.MakeLiteralExpr[float64](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[float64](scanner.ConsumeTokenInfo())
 	case tokens.FRACTION:
-		return ast.MakeLiteralExpr[utils.Fraction](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[utils.Fraction](scanner.ConsumeTokenInfo())
 	case tokens.CHAR:
-		return ast.MakeLiteralExpr[rune](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[rune](scanner.ConsumeTokenInfo())
 	case tokens.TRUE, tokens.FALSE:
-		return ast.MakeLiteralExpr[bool](scan.ConsumeTokenInfo())
+		return ast.MakeLiteralExpr[bool](scanner.ConsumeTokenInfo())
 	default:
 		panic("invalid call - shouldn't be here") // unreachable
 	}

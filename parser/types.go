@@ -8,7 +8,7 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
-func (p *Parser) parseAnonymousStructType(opening scan.TokenInfo) ast.Ast {
+func (p *Parser) parseAnonymousStructType(opening scan.TokenInfo) ast.Type {
 	lstruct := ast.AnonymousStructType{}
 	lstruct.Opening = opening.FromPos()
 	hasErr := false
@@ -85,10 +85,10 @@ func (p *Parser) parseTypeof(t scan.TokenInfo) *ast.TypeOf {
 	return typeof
 }
 
-func (p *Parser) parseType() ast.Ast {
+func (p *Parser) parseType() ast.Type {
 	switch p.scanner.CurrentToken() {
 	case tokens.IDENT:
-		var typ ast.Ast = ast.Ident(p.scanner.ConsumeTokenInfo())
+		var typ ast.Type = ast.IdentType{ast.Ident(p.scanner.ConsumeTokenInfo())}
 		var dot *ast.DottedExpr
 		for p.scanner.CurrentToken() == tokens.DOT {
 			dot = p.parseDotExpr(typ, p.scanner.ConsumeToken())
