@@ -37,8 +37,8 @@ var priorityForBinOp = map[tokens.Token]int{
 	tokens.EQ:  samePriority(),
 	tokens.NEQ: samePriority(),
 
-	tokens.LOR:  nextPriority(),
-	tokens.LAND: nextPriority(),
+	tokens.OR:  nextPriority(),
+	tokens.AND: nextPriority(),
 
 	tokens.PLUS:  samePriority(),
 	tokens.MINUS: samePriority(),
@@ -250,7 +250,8 @@ func (p *Parser) parseExpr() ast.Ast {
 	expr := p.parseSingleExpr()
 	for !p.scanner.CurrentToken().IsEoI() && p.scanner.CurrentToken() != tokens.EOF {
 		switch p.scanner.CurrentToken() {
-		case tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.MOD, tokens.FRAC_DIV:
+		case tokens.PLUS, tokens.MINUS, tokens.TIME, tokens.DIV, tokens.MOD, tokens.FRAC_DIV,
+			tokens.EQ, tokens.NEQ, tokens.AND, tokens.OR:
 			expr = p.parseBinop(expr, p.scanner.ConsumeToken())
 		default:
 			return expr
