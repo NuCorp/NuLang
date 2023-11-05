@@ -9,6 +9,7 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"os"
+	"strings"
 )
 
 func executor(elem ast.Ast) int64 {
@@ -41,7 +42,8 @@ func main() {
 	//return
 
 	code := scan.Code(`
-var a int, b typeof+(43), c typeof(typeof(a).Static.SubType)
+var expr = true && 4 + 2 == 6 || val is int,
+expr2 = val is int is bool
 `[1:])
 	ast, errs := parser.Parse(code, config.Interactive())
 	printAstResults(ast, errs)
@@ -53,7 +55,7 @@ func printAstResults(ast chan ast.Ast, errs map[scan.TokenPos]error) {
 	}
 	//fmt.Printf(" = %v", executor(ast[0]))
 	for pos, err := range errs {
-		fmt.Printf("* error at (%v)\n|\t%v\n", pos, err)
+		fmt.Printf("* error at (%v)\n|\t%v\n", pos, strings.ReplaceAll(err.Error(), "; ", ";\n|\t"))
 	}
 }
 
