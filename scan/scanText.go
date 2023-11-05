@@ -16,6 +16,8 @@ func (s *tokenizeText) completed() Tokenizer {
 	s.token.value = s.token.rawValue
 	if s.token.rawValue == "_" {
 		s.token.token = tokens.NO_IDENT
+	} else if s.token.token.IsOneOf(tokens.TRUE, tokens.FALSE) {
+		s.token.value = s.token.token == tokens.TRUE
 	}
 	return nil
 }
