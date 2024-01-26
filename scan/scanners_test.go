@@ -4,6 +4,8 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"math/rand"
 	"testing"
+
+	"github.com/DarkMiMolle/GTL/array"
 )
 
 func TestCodeLiterals(t *testing.T) {
@@ -220,4 +222,44 @@ func TestCode(t *testing.T) {
 		}
 	}
 	t.Run("with dot", run("a.b", tokens.IDENT, tokens.DOT, tokens.IDENT))
+}
+
+func MockScannerWith(toks ...tokens.Token) Scanner {
+	scanner := &CodeScanner{}
+	var i = 0
+	scanner.commonScanner = commonScanner{
+		Scanner: scanner,
+		tokens: array.Map(toks, func(tok tokens.Token) TokenInfo {
+			var value any = tok.String()
+			if tok.IsLiteral() {
+				switch tok {
+				case tokens.STR:
+					value = "42"
+				case tokens.INT:
+					value = 42
+				case tokens.FLOAT:
+					value = 42.0
+				case tokens.CHAR:
+					value = '*'
+				case tokens.FRACTION:
+					value = Fraction{42, 1}
+				}
+			}
+			defer func() {
+				i += len(tok.String())
+			}()
+			return TokenInfo{
+				rawValue: tok.String(),
+				token:    tok,
+				from:     TokenPos{col: i},
+				to:       TokenPos{col: i + len(tok.String()) - 1},
+				value:    value,
+				errorRef: 0,
+			}
+		}),
+		current: 0,
+		ended:   false,
+	}
+
+	return scanner
 }

@@ -40,11 +40,13 @@ func (p *Parser) ParseFile(scanner scan.Scanner) *ast.File {
 		case tokens.CONST:
 			checkPkg()
 			file.Code = append(file.Code, p.ParseConstDeclaration(scanner.ConsumeTokenInfo()))
-		case tokens.IMPORT:
+			validImport = false
+		case tokens.IMPORT: // it can be multiple time the "import" keyword as long as there is nothing else in between
 			checkPkg()
 			if !validImport {
 				// error lv6
 			}
+			file.Import = append(file.Import, p.ParseImport(scanner.ConsumeTokenInfo()))
 		}
 	}
 
