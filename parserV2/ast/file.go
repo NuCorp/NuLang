@@ -59,7 +59,7 @@ type File struct {
 	Errors map[scan.TokenPos]error
 
 	Package *Package
-	Import  *Import
+	Import  []*Import
 
 	Code []Ast
 }
