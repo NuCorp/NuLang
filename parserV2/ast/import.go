@@ -1,6 +1,9 @@
 package ast
 
-import "github.com/DarkMiMolle/GTL/optional"
+import (
+	"github.com/DarkMiMolle/GTL/optional"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+)
 
 type ImportHeader interface {
 	Ast
@@ -11,32 +14,26 @@ func ThisProjectImport() ImportHeader {
 	return nil
 }
 
-type ProtocolHeader string
+type ProtocolHeader struct {
+	scan.TokenInfo
+}
 
 func (ProtocolHeader) importHeader() {}
 
-type ProjectHeader struct{ Ident }
+type ProjectHeader struct{ scan.TokenInfo }
 
 func (ProjectHeader) importHeader() {}
 
 type Import struct {
 	ImportKw Keyword
-	Imports  map[ImportHeader]ImportElement
+	Imports  map[ImportHeader]ImportElements
 
 	Closing optional.Value[Position]
 }
 
-type ImportElement interface {
-	importElement()
-}
-
-type SimpleImport struct {
+type SingleImportElement struct {
 	Elems   []Ident
 	Renamed optional.Value[Ident]
 }
 
-func (SimpleImport) importElement() {}
-
-type MultipleImport []SimpleImport
-
-func (MultipleImport) importElement() {}
+type ImportElements []SingleImportElement

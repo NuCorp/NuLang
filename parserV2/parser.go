@@ -50,28 +50,3 @@ func (p *Parser) ParseFile(scanner scan.Scanner) *ast.File {
 
 	return file
 }
-
-func (p *Parser) ParseImport(kw scan.TokenInfo) *ast.Import {
-	scanner := p.scanner
-	astImport := &ast.Import{ImportKw: kw}
-
-	needClosing := false
-	if scanner.CurrentToken() == tokens.OBRAC {
-		scanner.ConsumeTokenInfo()
-		needClosing = true
-	}
-
-	for !scanner.IsEnded() {
-		switch tokInf := scanner.CurrentToken(); tokInf {
-		case tokens.IDENT:
-		}
-	}
-
-	return astImport
-}
-
-func (p *Parser) parseImportElement() (ast.ImportHeader, ast.ImportElement) {
-	scanner := p.scanner
-	header := ast.ThisProjectImport()
-
-}
