@@ -43,7 +43,7 @@ func (SimpleParameter) parameter() {}
 
 type NamedParameter struct {
 	Star Position
-	SimpleParameter
+	*SimpleParameter
 }
 
 type VariadicParameter struct {

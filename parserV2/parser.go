@@ -69,7 +69,6 @@ func (p *Parser) ParseFunctionDef(funcKw ast.Keyword) *ast.FunctionDef {
 	if scanner.CurrentToken() != tokens.OPAREN {
 		// error
 	} else {
-		scanner.ConsumeTokenInfo()
 		funcDef.Parameters = p.parseParameter()
 	}
 
@@ -93,7 +92,103 @@ func (p *Parser) ParseFunctionDef(funcKw ast.Keyword) *ast.FunctionDef {
 }
 
 func (p *Parser) parseParameter() []ast.Parameter {
-	return nil
+	scanner := p.scanner
+	if scanner.CurrentToken() != tokens.OPAREN {
+		panic("wrong usage: need open parentheses")
+	}
+	scanner.ConsumeTokenInfo()
+
+	var parameters []ast.Parameter
+
+	assigned := false
+	variadic := false
+	var prevToType []*ast.SimpleParameter
+	for !scanner.IsEnded() {
+		param := ast.SimpleParameter{}
+		namedParam := ast.NamedParameter{}
+
+		appendParam := func() {
+			if namedParam.SimpleParameter != nil {
+				parameters = append(parameters, namedParam)
+			} else {
+				parameters = append(parameters, param)
+			}
+		}
+
+		if scanner.CurrentToken() == tokens.STAR {
+			namedParam.SimpleParameter = &param
+			namedParam.Star = scanner.ConsumeTokenInfo().FromPos()
+		}
+		if scanner.CurrentToken() != tokens.IDENT {
+			// error: unexpected token; expected IDENT to name the parameter
+			break
+		}
+		param.Name = ast.Ident{scanner.ConsumeTokenInfo()}
+		if (variadic || assigned) && namedParam.SimpleParameter == nil {
+			// error: named parameter are required after assigned parameters or variadic parameter
+		}
+
+		switch scanner.CurrentToken() {
+		case tokens.ASSIGN:
+			assigned = true
+			if len(prevToType) > 0 {
+				// error: missing parameter type for previous parameter
+				prevToType = nil
+			}
+			scanner.ConsumeTokenInfo()
+			param.Value.Set(nil) // TODO: p.ParseExpr()
+			appendParam()
+		case tokens.COMA:
+			prevToType = append(prevToType, &param)
+			appendParam()
+		case tokens.ELLIPSIS:
+			if variadic {
+				// error: can have only one variadic parameter; consider replacing it with an array
+			}
+			if assigned {
+				// error: variadic parameter must be before the first assigned parameter; consider replacing it with an array
+			}
+			if namedParam.SimpleParameter != nil {
+				// error: variadic parameter can't be named parameter only; consider replacing it with an array
+			}
+			if len(prevToType) > 0 {
+				// error: missing parameter type for previous parameter
+				prevToType = nil
+			}
+
+			scanner.ConsumeTokenInfo()
+			parameters = append(parameters, ast.VariadicParameter{Name: param.Name, Type: p.ParseTypeExpr()})
+			variadic = true
+		default:
+			param.Type.Set(p.ParseTypeExpr())
+			if scanner.CurrentToken() == tokens.ASSIGN {
+				assigned = true
+				if len(prevToType) > 0 {
+					// error: missing parameter type for previous parameter
+					prevToType = nil
+				}
+				scanner.ConsumeTokenInfo()
+				param.Value.Set(nil) // TODO: p.ParseExpr()
+			}
+			appendParam()
+		}
+		if param.Type.HasValue() && !param.Value.HasValue() {
+			for _, paramToType := range prevToType {
+				paramToType.Type.Set(param.Type.Value())
+			}
+			prevToType = nil
+		}
+		if tok := scanner.CurrentToken(); tok != tokens.COMA && tok != tokens.CPAREN {
+			// error: unexpected token; expected ','/')' to continue/stop the parameter list
+			break
+		}
+		if scanner.ConsumeToken() == tokens.CPAREN {
+			break
+		}
+		// it was a COMA
+	}
+
+	return parameters
 }
 
 func (p *Parser) ParseTypeExpr() ast.Ast { return nil } // TODO: function + replace Ast by TypeExpr
