@@ -272,7 +272,7 @@ func (p *Parser) parseVarSimpleElement(ident scan.TokenInfo) ast.SingleVarDeclar
 	}
 
 	if scanner.CurrentToken() != tokens.ASSIGN {
-		elem.Type.Set(nil) // TODO: p.ParseTypeExpr()
+		elem.Type.Set(p.ParseTypeExpr())
 	}
 
 	if scanner.CurrentToken() == tokens.COMA {

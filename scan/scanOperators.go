@@ -43,7 +43,7 @@ func (t *tokenizeOperatorAndPunctuation) Tokenize(r rune, pos TokenPos) Tokenize
 		tokens.LAND.String():   {{'&', tokens.AND}, {'=', tokens.LAND_ASSIGN}},
 		tokens.LOR.String():    {{'|', tokens.OR}, {'=', tokens.LOR_ASSIGN}},
 		tokens.ASK.String():    {{'?', tokens.ASKOR}},
-		tokens.ASSIGN.String(): {{'=', tokens.EQ}, {'>', tokens.IMPL}},
+		tokens.ASSIGN.String(): {{'=', tokens.EQ}, {'>', tokens.ARROW}},
 		tokens.NOT.String():    {{'=', tokens.NEQ}},
 		tokens.GT.String():     {{'=', tokens.GE}, {'>', tokens.RSHIFT}},
 		tokens.LT.String():     {{'=', tokens.LE}, {'<', tokens.LSHIFT}, {'-', tokens.LARROW}},

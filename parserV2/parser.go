@@ -47,8 +47,53 @@ func (p *Parser) ParseFile(scanner scan.Scanner) *ast.File {
 				// error lv6
 			}
 			file.Import = append(file.Import, p.ParseImport(scanner.ConsumeTokenInfo()))
+		case tokens.FUNC:
+			checkPkg()
+			validImport = false
+
 		}
 	}
 
 	return file
 }
+
+func (p *Parser) ParseFunctionDef(funcKw ast.Keyword) *ast.FunctionDef {
+	funcDef := &ast.FunctionDef{FuncKw: funcKw}
+	scanner := p.scanner
+	if scanner.CurrentToken() != tokens.IDENT {
+		// error
+	} else {
+		funcDef.Name = ast.Ident{scanner.ConsumeTokenInfo()}
+	}
+
+	if scanner.CurrentToken() != tokens.OPAREN {
+		// error
+	} else {
+		scanner.ConsumeTokenInfo()
+		funcDef.Parameters = p.parseParameter()
+	}
+
+	//TODO: if p.canStartTypeExpr() then funcDef.ReturnType.Set(p.ParseTypeExpr())
+
+	if scanner.CurrentToken() == tokens.OBRAC {
+		funcDef.HasImplem = true
+		scanner.ConsumeTokenInfo() // TODO (below)
+		/*
+			TODO:	scope := p.ParseScope(scanner.ConsumeTokenInfo())
+					funcDef.Body = scope.Code
+					funcDef.ClosingBody.Set(scope.Closing)
+		*/
+	} else if scanner.CurrentToken() == tokens.ARROW {
+		funcDef.HasImplem = true
+		scanner.ConsumeTokenInfo()
+		// TODO: funcDef.Body = []Ast{p.parseOneLine()}
+	}
+
+	return funcDef
+}
+
+func (p *Parser) parseParameter() []ast.Parameter {
+	return nil
+}
+
+func (p *Parser) ParseTypeExpr() ast.Ast { return nil } // TODO: function + replace Ast by TypeExpr

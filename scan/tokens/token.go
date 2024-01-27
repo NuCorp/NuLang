@@ -127,7 +127,7 @@ const (
 	DOT      // ".",
 	ELLIPSIS // "...",
 
-	IMPL   // "=>",
+	ARROW  // "=>",
 	RARROW // "->",
 	LARROW // "<-",
 
@@ -144,6 +144,7 @@ const (
 
 const (
 	STAR = TIME
+	IMPL = ARROW
 )
 
 func (t Token) String() string {
@@ -317,7 +318,7 @@ var tokenStr = map[Token]string{
 	DOT:      ".",
 	ELLIPSIS: "...",
 
-	IMPL:   "=>",
+	ARROW:  "=>",
 	RARROW: "->",
 	LARROW: "<-",
 
