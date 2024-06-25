@@ -31,7 +31,7 @@ type commonScanner struct {
 }
 
 func (c *commonScanner) IsEnded() bool {
-	return c.ended
+	return c.ended && c.current >= len(c.tokens)
 }
 func (c *commonScanner) CurrentTokenInfo() TokenInfo {
 	if c.IsEnded() {
@@ -80,9 +80,6 @@ func (c *commonScanner) LookUp(how int) CodeToken {
 	codeToken[0] = c.ConsumeTokenInfo()
 
 	for len(codeToken) != cap(codeToken) || how == 0 {
-		if c.CurrentToken() == tokens.EOF {
-			break
-		}
 		codeToken = append(codeToken, c.ConsumeTokenInfo())
 	}
 	return codeToken
@@ -121,7 +118,7 @@ type CodeScanner struct {
 
 func Code(code string) Scanner {
 	c := new(CodeScanner)
-	c.commonScanner.Scanner = c
+	c.Scanner = c
 	lines := strings.Split(code, "\n")
 	input := make(chan string)
 	output := make(chan CodeToken)

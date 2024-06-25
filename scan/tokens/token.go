@@ -123,7 +123,7 @@ const (
 
 	SEMI     //;
 	COLON    // ":"
-	COMA     // ",",
+	COMMA    // ",",
 	DOT      // ".",
 	ELLIPSIS // "...",
 
@@ -313,7 +313,7 @@ var tokenStr = map[Token]string{
 	// punctuations
 	SEMI:     ";",
 	COLON:    ":",
-	COMA:     ",",
+	COMMA:    ",",
 	DOT:      ".",
 	ELLIPSIS: "...",
 

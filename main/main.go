@@ -6,6 +6,7 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV3"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"os"
@@ -38,6 +39,8 @@ func executor(elem ast.Ast) int64 {
 }
 
 func main() {
+	parserV3.Main()
+	return
 	//Input()
 	//return
 

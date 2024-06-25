@@ -70,7 +70,7 @@ func (t *tokenizeOperatorAndPunctuation) Tokenize(r rune, pos TokenPos) Tokenize
 			{'<', tokens.LT},
 
 			{':', tokens.COLON},
-			{',', tokens.COMA},
+			{',', tokens.COMMA},
 			{'.', tokens.DOT},
 			{'[', tokens.OBRAK},
 			{'{', tokens.OBRAC},
