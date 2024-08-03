@@ -1,6 +1,11 @@
 package ast
 
-import "github.com/DarkMiMolle/GTL/optional"
+import (
+	"github.com/DarkMiMolle/GTL/optional"
+)
+
+type Ast interface {
+}
 
 type Package struct {
 	Name Ident

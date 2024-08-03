@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"os"
+	"reflect"
 	"strings"
 	"unicode"
 )
@@ -21,6 +22,7 @@ type Scanner interface {
 	Prev(offset int) TokenInfo
 	Scan() bool
 	IsEnded() bool
+	Clone() Scanner
 }
 
 type commonScanner struct {
@@ -110,6 +112,16 @@ func (c *commonScanner) Prev(offset int) TokenInfo {
 	}
 	return c.tokens[c.current-offset]
 }
+func (c *commonScanner) Clone() Scanner {
+	scanner := reflect.ValueOf(c.Scanner)
+	cpy := reflect.New(scanner.Type().Elem())
+	cpy.Elem().Set(scanner.Elem())
+	if !cpy.Elem().FieldByName("commonScanner").IsValid() {
+		return cpy.Interface().(Scanner)
+	}
+	cpy.Elem().FieldByName("commonScanner").FieldByName("Scanner").Set(cpy)
+	return cpy.Interface().(Scanner)
+}
 
 type CodeScanner struct {
 	commonScanner
@@ -148,6 +160,14 @@ func (c *CodeScanner) Scan() bool {
 	c.ended = c.current < len(c.tokens)
 	return c.ended
 }
+
+/*func (c *CodeScanner) Clone() Scanner {
+
+	cpy := new(CodeScanner)
+	*cpy = *c
+	cpy.Scanner = cpy
+	return cpy
+}*/
 
 type FileScanner struct {
 	commonScanner

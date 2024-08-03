@@ -36,7 +36,7 @@ func (p *Parser) parseAnonymousStructType(opening scan.TokenInfo) ast.Type {
 		for range attributes {
 			lstruct.Getter = append(lstruct.Getter, getter)
 		}
-		if p.scanner.CurrentToken() == tokens.COMA {
+		if p.scanner.CurrentToken() == tokens.COMMA {
 			p.scanner.ConsumeToken()
 			continue
 		}

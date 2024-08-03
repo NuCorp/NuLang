@@ -51,12 +51,12 @@ func (p *Parser) ParseConstDeclaration(constKw scan.TokenInfo) *ast.ConstDeclara
 			constDecl.Constants = append(constDecl.Constants, newVar)
 		default:
 			// error
-			p.SkipTo(append(tokens.EoI(), tokens.COMA)...)
+			p.SkipTo(append(tokens.EoI(), tokens.COMMA)...)
 		}
-		if scanner.CurrentToken() != tokens.COMA {
+		if scanner.CurrentToken() != tokens.COMMA {
 			break
 		}
-		p.Skip(tokens.NL, tokens.COMA)
+		p.Skip(tokens.NL, tokens.COMMA)
 	}
 
 	return constDecl

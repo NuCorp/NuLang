@@ -7,7 +7,14 @@ import (
 // VarDeclaration is for variable declaration using the `var` keyword
 type VarDeclaration struct {
 	VarKeyword Keyword
-	Variables  []VarElem
+	Variables  []Variable
+}
+
+type Variable struct {
+	Name        Ident
+	DeclareOnly bool
+	Type        optional.Value[Ast]
+	Value       optional.Value[Ast]
 }
 
 type declarationElem interface {

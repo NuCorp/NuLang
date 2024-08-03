@@ -9,8 +9,142 @@ import (
 	"os"
 )
 
-func (p *Parser) ParseVarDeclaration(varKeyword scan.TokenInfo) *ast.VarDeclaration {
-	scanner := p.scanner
+/*
+type varDefList = struct {
+	names [ast.Ident]bool
+	typ ast.TypeExpr
+}
+
+type bindingDef = struct
+
+type valueDef = struct {
+	name ast.Ident
+	typ *ast.TypeExpr
+	value *ast.Expr
+}
+
+type Parser += extension ParseVarDeclaration(scanner scanner, varKw scan.TokenInfo) *ast.VarDeclaration {
+	varDecl := new ast.VarDeclaration{*VarKeyword: varKw}
+
+	while !scanner.IsEnded {
+		var current |varDefList|bindingDef|valueDef|
+		case scanner.CurrentToken {
+			== tokens.STAR: // binding
+		}
+		case current {
+		is varDefList:
+			if current.typ == nil then; // error
+			for *[Name, IsDefaulted] in current.names do varDecl.Set(ast.Variable{*Name, *IsDefaulted, *Type: typ})
+		is bindingDef:
+			// ...
+		is valueDef:
+			if current.type == nil && current.value == nil then ; // error
+			varDecl.Set(ast.Variable{*Name: current.name, *Type: current.typ, *Value: current.value})
+		}
+	}
+}
+*/
+
+type varDefList struct {
+	names map[ast.Ident]bool // names and whether they are defaulted or not
+	typ   ast.Ast            // TODO: TypeExpr
+}
+
+type valueDecl struct {
+	name  ast.Ident
+	typ   optional.Value[ast.Ast]
+	value ast.Ast
+}
+
+func (p *Parser) parseVarDecl(s scanner, varKw scan.TokenInfo) *ast.VarDeclaration {
+	varDecl := &ast.VarDeclaration{VarKeyword: varKw}
+	for !s.IsEnded() {
+		var current any // |*varDefList|*valueDecl|*binding|
+		switch s.CurrentToken() {
+		case tokens.STAR:
+		case tokens.IDENT:
+			ident := ast.Ident{s.ConsumeTokenInfo()}
+			current = &varDefList{names: map[ast.Ident]bool{ident: false}}
+			if s.CurrentToken() == tokens.COMMA {
+				s.ConsumeTokenInfo()
+				p.parseVarDefList(s, current.(*varDefList))
+				break
+			}
+			if s.CurrentToken() == tokens.ASK {
+				s.ConsumeTokenInfo()
+				current.(*varDefList).names[ident] = true
+				if s.CurrentToken() != tokens.COMMA {
+					current.(*varDefList).typ = nil // TODO: p.parseTypeExpr(s)
+					break
+				}
+				s.ConsumeTokenInfo()
+				p.parseVarDefList(s, current.(*varDefList))
+				break
+			}
+			current = &valueDecl{name: ident}
+			if s.CurrentToken() != tokens.ASSIGN {
+				current.(*valueDecl).typ = optional.Some[ast.Ast](nil) // p.parseTypeExpr(s)
+			}
+			if s.CurrentToken() != tokens.ASSIGN {
+				// error
+			}
+			s.ConsumeTokenInfo()
+			current.(*valueDecl).value = nil // p.parseExpr(s)
+
+		default:
+			// error
+			s.SkipTo(append(tokens.EoI(), tokens.COMMA)...)
+
+		}
+		switch current := current.(type) {
+		case *varDefList:
+			if current.typ == nil {
+				// error; set typerror
+				// current.typ = ast.TypeError{s.CurrentTokenInfo().FromPos()}
+			}
+			typ := optional.Some(current.typ)
+			for name, isDefaulted := range current.names {
+				varDecl.Variables = append(varDecl.Variables, ast.Variable{
+					Name:        name,
+					DeclareOnly: isDefaulted,
+					Type:        typ,
+				})
+			}
+		case valueDecl:
+			varDecl.Variables = append(varDecl.Variables, ast.Variable{
+				Name:        current.name,
+				DeclareOnly: false,
+				Type:        current.typ,
+				Value:       optional.Some(current.value),
+			})
+		case nil:
+
+		}
+	}
+	return varDecl
+}
+func (p *Parser) parseVarDefList(s scanner, varDefList *varDefList) {
+	for !s.IsEnded() {
+		if s.CurrentToken() != tokens.IDENT {
+			// error: unexpected token: ...
+			return
+		}
+		ident := ast.Ident{s.ConsumeTokenInfo()}
+		defaulted := s.CurrentToken() != tokens.ASK
+		if !defaulted {
+			s.ConsumeTokenInfo()
+		}
+		varDefList.names[ident] = defaulted
+		if s.CurrentToken() == tokens.COMMA {
+			s.ConsumeTokenInfo()
+			continue
+		}
+		// parseTypeExpr
+		return
+	}
+}
+
+func (p *Parser) ParseVarDeclaration(scanner scanner, varKeyword scan.TokenInfo) *ast.VarDeclaration {
 	varDecl := &ast.VarDeclaration{VarKeyword: varKeyword}
 	var prevElem ast.VarElem
 	for !scanner.IsEnded() {
@@ -21,10 +155,10 @@ func (p *Parser) ParseVarDeclaration(varKeyword scan.TokenInfo) *ast.VarDeclarat
 					// ERROR: missing either type or value to previous variable
 				}
 			}
-			prevElem = p.parseVarAssignNameBinding(scanner.ConsumeTokenInfo())
+			prevElem = p.parseVarAssignNameBinding(scanner, scanner.ConsumeTokenInfo())
 			varDecl.Variables = append(varDecl.Variables, prevElem)
 		case tokens.IDENT: // simple
-			newVar := p.parseVarSimpleElement(scanner.ConsumeTokenInfo())
+			newVar := p.parseVarSimpleElement(scanner, scanner.ConsumeTokenInfo())
 			if newVar.Value.HasValue() {
 				if singleVar, ok := prevElem.(ast.SingleVarDeclaration); ok {
 					if !singleVar.Type.HasValue() && !singleVar.Value.HasValue() {
@@ -50,25 +184,25 @@ func (p *Parser) ParseVarDeclaration(varKeyword scan.TokenInfo) *ast.VarDeclarat
 			varDecl.Variables = append(varDecl.Variables, newVar)
 		default:
 			// error
-			p.SkipTo(append(tokens.EoI(), tokens.COMA)...)
+			scanner.SkipTo(append(tokens.EoI(), tokens.COMMA)...)
 		}
-		if scanner.CurrentToken() != tokens.COMA {
+		if scanner.CurrentToken() != tokens.COMMA {
 			break
 		}
-		p.Skip(tokens.NL, tokens.COMA)
+		scanner.Skip(tokens.NL, tokens.COMMA)
 	}
 
 	return varDecl
 }
 
-func (p *Parser) parseVarAssignBinding(star scan.TokenInfo) ast.BindingElement {
-	switch p.scanner.CurrentToken() {
+func (p *Parser) parseVarAssignBinding(scanner scanner, star scan.TokenInfo) ast.BindingElement {
+	switch scanner.CurrentToken() {
 	case tokens.OBRAC:
-		binding := p.parseVarAssignNameBinding(p.scanner.ConsumeTokenInfo())
+		binding := p.parseVarAssignNameBinding(scanner, scanner.ConsumeTokenInfo())
 		binding.StarSymbol = optional.Some(star.FromPos())
 		return binding
 	case tokens.OBRAK:
-		binding := p.parseVarAssignOrderBinding(p.scanner.ConsumeTokenInfo())
+		binding := p.parseVarAssignOrderBinding(scanner, scanner.ConsumeTokenInfo())
 		binding.StarSymbol = optional.Some(star.FromPos())
 		return binding
 	default:
@@ -80,13 +214,11 @@ func (p *Parser) parseVarAssignBinding(star scan.TokenInfo) ast.BindingElement {
 
 type subBindingOption struct{}
 
-func (p *Parser) parseVarAssignNameBinding(open scan.TokenInfo, option ...subBindingOption) ast.NameBinding {
+func (p *Parser) parseVarAssignNameBinding(scanner scanner, open scan.TokenInfo, option ...subBindingOption) ast.NameBinding {
 	isSubBinding := len(option) > 0
 
 	var binding ast.NameBinding
 	binding.Opening = open.FromPos()
-
-	scanner := p.scanner
 
 	for !scanner.IsEnded() {
 		switch scanner.CurrentToken() {
@@ -96,11 +228,11 @@ func (p *Parser) parseVarAssignNameBinding(open scan.TokenInfo, option ...subBin
 				star.Set(scanner.ConsumeTokenInfo().FromPos())
 			}
 			if scanner.CurrentToken() == tokens.OBRAC {
-				subBinding := p.parseVarAssignNameBinding(scanner.ConsumeTokenInfo(), subBindingOption{})
+				subBinding := p.parseVarAssignNameBinding(scanner, scanner.ConsumeTokenInfo(), subBindingOption{})
 				subBinding.StarSymbol = star
 				binding.Element = append(binding.Element, subBinding)
 			} else if scanner.CurrentToken() == tokens.OBRAK {
-				subBinding := p.parseVarAssignOrderBinding(scanner.ConsumeTokenInfo(), subBindingOption{})
+				subBinding := p.parseVarAssignOrderBinding(scanner, scanner.ConsumeTokenInfo(), subBindingOption{})
 				subBinding.StarSymbol = star
 				binding.Element = append(binding.Element, subBinding)
 			}
@@ -110,7 +242,7 @@ func (p *Parser) parseVarAssignNameBinding(open scan.TokenInfo, option ...subBin
 			if scanner.CurrentToken() == tokens.AS {
 				panic("todo: as binding") // TODO
 			}
-			if scanner.CurrentToken() != tokens.COMA {
+			if scanner.CurrentToken() != tokens.COMMA {
 				binding.Element = append(binding.Element, elem)
 				break // break case
 			}
@@ -139,9 +271,9 @@ func (p *Parser) parseVarAssignNameBinding(open scan.TokenInfo, option ...subBin
 			binding.Element = append(binding.Element, elem)
 		default:
 			fmt.Fprintf(os.Stderr, "ERROR [Err6] unexpected token %v in Name binding\n", scanner.ConsumeToken())
-			p.SkipTo(tokens.COMA, tokens.CBRAC)
+			scanner.SkipTo(tokens.COMMA, tokens.CBRAC)
 		}
-		if scanner.CurrentToken() == tokens.COMA {
+		if scanner.CurrentToken() == tokens.COMMA {
 			scanner.ConsumeTokenInfo()
 			continue
 		}
@@ -157,7 +289,7 @@ func (p *Parser) parseVarAssignNameBinding(open scan.TokenInfo, option ...subBin
 		binding.Forced.Set(scanner.ConsumeTokenInfo().FromPos())
 	}
 
-	if (isSubBinding && scanner.CurrentToken() != tokens.COMA) &&
+	if (isSubBinding && scanner.CurrentToken() != tokens.COMMA) &&
 		(!isSubBinding && scanner.CurrentToken() != tokens.ASSIGN) {
 		// error binding expect a value
 		return binding
@@ -169,13 +301,11 @@ func (p *Parser) parseVarAssignNameBinding(open scan.TokenInfo, option ...subBin
 	return binding
 }
 
-func (p *Parser) parseVarAssignOrderBinding(open scan.TokenInfo, option ...subBindingOption) ast.OrderBinding {
+func (p *Parser) parseVarAssignOrderBinding(scanner scanner, open scan.TokenInfo, option ...subBindingOption) ast.OrderBinding {
 	isSubBinding := len(option) > 0
 
 	var binding ast.OrderBinding
 	binding.Opening = open.FromPos()
-
-	scanner := p.scanner
 
 	for !scanner.IsEnded() {
 		switch scanner.CurrentToken() {
@@ -185,11 +315,11 @@ func (p *Parser) parseVarAssignOrderBinding(open scan.TokenInfo, option ...subBi
 				star.Set(scanner.ConsumeTokenInfo().FromPos())
 			}
 			if scanner.CurrentToken() == tokens.OBRAC {
-				subBinding := p.parseVarAssignNameBinding(scanner.ConsumeTokenInfo(), subBindingOption{})
+				subBinding := p.parseVarAssignNameBinding(scanner, scanner.ConsumeTokenInfo(), subBindingOption{})
 				subBinding.StarSymbol = star
 				binding.Element = append(binding.Element, subBinding)
 			} else if scanner.CurrentToken() == tokens.OBRAK {
-				subBinding := p.parseVarAssignOrderBinding(scanner.ConsumeTokenInfo(), subBindingOption{})
+				subBinding := p.parseVarAssignOrderBinding(scanner, scanner.ConsumeTokenInfo(), subBindingOption{})
 				subBinding.StarSymbol = star
 				binding.Element = append(binding.Element, subBinding)
 			}
@@ -199,7 +329,7 @@ func (p *Parser) parseVarAssignOrderBinding(open scan.TokenInfo, option ...subBi
 			if scanner.CurrentToken() == tokens.AS {
 				panic("todo: as binding") // TODO
 			}
-			if scanner.CurrentToken() != tokens.COMA {
+			if scanner.CurrentToken() != tokens.COMMA {
 				binding.Element = append(binding.Element, elem)
 				break // break case
 			}
@@ -227,9 +357,9 @@ func (p *Parser) parseVarAssignOrderBinding(open scan.TokenInfo, option ...subBi
 			binding.Element = append(binding.Element, elem)
 		default:
 			fmt.Fprintf(os.Stderr, "ERROR [Err6] unexpected token %v in Name binding\n", scanner.ConsumeToken())
-			p.SkipTo(tokens.COMA, tokens.CBRAK)
+			scanner.SkipTo(tokens.COMMA, tokens.CBRAK)
 		}
-		if scanner.CurrentToken() == tokens.COMA {
+		if scanner.CurrentToken() == tokens.COMMA {
 			scanner.ConsumeTokenInfo()
 			continue
 		}
@@ -250,7 +380,7 @@ func (p *Parser) parseVarAssignOrderBinding(open scan.TokenInfo, option ...subBi
 		return binding
 	}
 
-	if isSubBinding && scanner.CurrentToken() != tokens.COMA {
+	if isSubBinding && scanner.CurrentToken() != tokens.COMMA {
 		return binding // ok order sub-binding doesn't need a value
 	}
 	scanner.ConsumeToken()
@@ -260,14 +390,13 @@ func (p *Parser) parseVarAssignOrderBinding(open scan.TokenInfo, option ...subBi
 	return binding
 }
 
-func (p *Parser) parseVarSimpleElement(ident scan.TokenInfo) ast.SingleVarDeclaration {
-	scanner := p.scanner
+func (p *Parser) parseVarSimpleElement(scanner scanner, ident scan.TokenInfo) ast.SingleVarDeclaration {
 	elem := ast.SingleVarDeclaration{Name: ast.Ident{ident}}
 	if scanner.CurrentToken() == tokens.ASK {
 		elem.DeclareOnly = true
 		scanner.ConsumeTokenInfo()
 	}
-	if scanner.CurrentToken() == tokens.COMA {
+	if scanner.CurrentToken() == tokens.COMMA {
 		return elem
 	}
 
@@ -275,7 +404,7 @@ func (p *Parser) parseVarSimpleElement(ident scan.TokenInfo) ast.SingleVarDeclar
 		elem.Type.Set(nil) // TODO: p.ParseTypeExpr()
 	}
 
-	if scanner.CurrentToken() == tokens.COMA {
+	if scanner.CurrentToken() == tokens.COMMA {
 		return elem
 	}
 

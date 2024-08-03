@@ -26,7 +26,7 @@ func (p *Parser) parseSubBindingElem(opening scan.TokenInfo) *ast.SubBinding {
 	}
 	for len(subbingins) > 0 {
 		switch p.scanner.CurrentToken() {
-		case tokens.COMA:
+		case tokens.COMMA:
 			if len(lastSubBinding().Elements) == 0 {
 				p.addError(fmt.Errorf("expected at least one (valid) element before ','"))
 			}
@@ -80,7 +80,7 @@ func (p *Parser) parseSubBindingElem(opening scan.TokenInfo) *ast.SubBinding {
 
 		default:
 			p.addError(fmt.Errorf("unexpected token `%v`", p.scanner.ConsumeToken()))
-			p.skipTo(lastSubBinding().Closing, tokens.COMA)
+			p.skipTo(lastSubBinding().Closing, tokens.COMMA)
 		}
 	}
 	return subbinding
@@ -143,7 +143,7 @@ func (p *Parser) parseNameBinding(star, obrace scan.TokenInfo, isVar bool) *ast.
 		if elem != nil {
 			nameBinding.AddBindingElement(elem)
 		}
-		if p.scanner.CurrentToken() == tokens.COMA {
+		if p.scanner.CurrentToken() == tokens.COMMA {
 			p.scanner.ConsumeToken()
 			p.skipTokens(tokens.EoI()...)
 			continue

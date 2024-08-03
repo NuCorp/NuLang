@@ -143,7 +143,7 @@ func (p *Parser) parseTupleExpr(oparen scan.TokenPos) ast.Ast {
 	for p.scanner.CurrentToken() != tokens.CPAREN && p.scanner.CurrentToken() != tokens.EOF {
 		p.skipTokens(tokens.NL)
 		tuple.ExprList = append(tuple.ExprList, p.parseExpr())
-		if p.scanner.CurrentToken() == tokens.COMA {
+		if p.scanner.CurrentToken() == tokens.COMMA {
 			p.scanner.ConsumeToken()
 			continue
 		}
@@ -172,12 +172,12 @@ func (p *Parser) parseAnonymousStructExpr(opening scan.TokenInfo) ast.Ast {
 		}
 		lstruct.Fields = append(lstruct.Fields, p.parseBindToNameStmt(p.scanner.ConsumeTokenInfo().FromPos()))
 
-		if p.scanner.CurrentToken() != tokens.COMA && p.scanner.CurrentToken() != tokens.CBRAC {
+		if p.scanner.CurrentToken() != tokens.COMMA && p.scanner.CurrentToken() != tokens.CBRAC {
 			p.addError(fmt.Errorf("unexpected `%v` at the end of a name binding match", p.scanner.ConsumeToken()))
-			p.skipTo(tokens.COMA, tokens.CBRAC)
+			p.skipTo(tokens.COMMA, tokens.CBRAC)
 		}
-		if p.scanner.CurrentToken() == tokens.COMA {
-			p.skipTokens(tokens.COMA, tokens.NL)
+		if p.scanner.CurrentToken() == tokens.COMMA {
+			p.skipTokens(tokens.COMMA, tokens.NL)
 			continue
 		}
 	}
@@ -256,7 +256,7 @@ func (p *Parser) parseExpr() ast.Ast {
 		case tokens.IS:
 			p.addError(fmt.Errorf("`is` expression is a final single expression"))
 			p.addError(fmt.Errorf("  it can only be used on single expression but is used as complex one"))
-			p.skipTo(append(tokens.EoI(), tokens.COMA)...)
+			p.skipTo(append(tokens.EoI(), tokens.COMMA)...)
 		default:
 			return expr
 		}

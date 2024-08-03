@@ -2,120 +2,10 @@ package parserV3
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/cmp"
 	"slices"
 	"strings"
 )
-
-type Lesser[T any] interface {
-	LessThan(T) bool
-}
-type Equalizer[T any] interface {
-	EqualTo(T) bool
-}
-type Greater[T any] interface {
-	GreaterThan(T) bool
-}
-type GreaterOrEqual[T any] interface {
-	Greater[T]
-	Equalizer[T]
-	GreaterOrEqualTo(T) bool
-}
-type LesserOrEqual[T any] interface {
-	Lesser[T]
-	Equalizer[T]
-	LessOrEqualTo(T) bool
-}
-type FullOrderer[T any] interface {
-	LesserOrEqual[T]
-	GreaterOrEqual[T]
-}
-
-func DefaultLessOrEqualTo[V any, T interface {
-	Lesser[V]
-	Equalizer[V]
-}](left T, right V) bool {
-	return left.EqualTo(right) || left.LessThan(right)
-}
-
-type LessOrEqualWrapper[T interface {
-	Lesser[T]
-	Equalizer[T]
-}] struct {
-	Self T
-}
-
-func (l LessOrEqualWrapper[T]) LessThan(right T) bool {
-	return l.Self.LessThan(right)
-}
-func (l LessOrEqualWrapper[T]) EqualTo(right T) bool {
-	return l.Self.EqualTo(right)
-}
-func (l LessOrEqualWrapper[T]) LessOrEqualTo(right T) bool {
-	return DefaultLessOrEqualTo(l.Self, right)
-}
-
-type GenericOrder[T any] struct {
-	self T
-}
-
-func (g GenericOrder[T]) Self() T {
-	return g.self
-}
-
-func (g GenericOrder[T]) LessThan(right T) bool {
-	if self, ok := any(g.self).(Lesser[T]); ok {
-		return self.LessThan(right)
-	}
-	panic("missing method LessThan")
-}
-
-func (g GenericOrder[T]) EqualTo(right T) bool {
-	if self, ok := any(g.self).(Equalizer[T]); ok {
-		return self.EqualTo(right)
-	}
-	panic("missing method EqualTo")
-}
-
-func (g GenericOrder[T]) LessOrEqualTo(right T) bool {
-	switch self := any(g.self).(type) {
-	case LesserOrEqual[T]:
-		return self.LessOrEqualTo(right)
-	case interface {
-		Lesser[T]
-		Equalizer[T]
-	}:
-		return self.LessThan(right) || self.EqualTo(right)
-	}
-	panic("missing LessOrEqualTo methods")
-}
-
-func (g GenericOrder[T]) GreaterThan(right T) bool {
-	if self, ok := any(g.self).(Greater[T]); ok {
-		return self.GreaterThan(right)
-	}
-	panic("missing method GreaterThan")
-}
-
-func (g GenericOrder[T]) GreaterOrEqualTo(right T) bool {
-	switch self := any(g.self).(type) {
-	case GreaterOrEqual[T]:
-		return self.GreaterOrEqualTo(right)
-	case interface {
-		Greater[T]
-		Equalizer[T]
-	}:
-		return self.GreaterThan(right) || self.EqualTo(right)
-	}
-	panic("missing GreaterOrEqualTo methods")
-}
-
-func LesserSliceSortAdaptor[T Lesser[T]](left, right T) int {
-	if left.LessThan(right) {
-		return -1
-	}
-	return 1
-}
 
 type Pos struct {
 	File      string
@@ -137,98 +27,101 @@ func (p Pos) LessThan(right Pos) bool {
 	}
 	return p.Col < right.Col
 }
+func (p Pos) EqualTo(right Pos) bool {
+	return p == right
+}
 func (p Pos) String() string {
 	return fmt.Sprintf("%v:%v:%v", p.File, p.Line, p.Col)
 }
 
-type PosInfo[T any] struct {
-	indexes []Pos
-	values  map[Pos]T
+type SortedMap[K, V any, O cmp.SliceOrderer[K]] struct {
+	indexes []K
+	values  []V
 }
 
-type PosInfoError string
-
-func (err PosInfoError) Error() string {
-	return string(err)
-}
-func PosInfoNotFound(pos Pos) PosInfoError {
-	return PosInfoError(fmt.Sprintf("pos info at %v not found", pos))
+func NewSortedMap[K, V any, O cmp.SliceOrderer[K]](_ O) *SortedMap[K, V, O] {
+	return &SortedMap[K, V, O]{}
 }
 
-func NewPosInfo[T any]() *PosInfo[T] {
-	return &PosInfo[T]{
-		values: make(map[Pos]T),
-	}
-}
-func (p *PosInfo[T]) Add(pos Pos, val T) *PosInfo[T] {
-	p.values[pos] = val
-	i, _ := slices.BinarySearchFunc(p.indexes, pos, LesserSliceSortAdaptor[Pos]) // find slot
-	p.indexes = slices.Insert(p.indexes, i, pos)
-	return p
-}
-func (p *PosInfo[T]) AddMany(elems map[Pos]T) *PosInfo[T] {
-	for pos, val := range elems {
-		p.Add(pos, val)
-	}
-	return p
-}
-func (p *PosInfo[T]) InfoAt(pos Pos) (T, error) {
-	val, found := p.values[pos]
+func (m *SortedMap[K, V, O]) Set(key K, val V) *SortedMap[K, V, O] {
+	var orderer O
+	i, found := slices.BinarySearchFunc(m.indexes, key, orderer.SliceOrder)
 	if !found {
-		return val, PosInfoNotFound(pos)
+		m.indexes = slices.Insert(m.indexes, i, key)
+		m.values = slices.Insert(m.values, i, val)
+	} else {
+		m.values[i] = val
 	}
-	return val, nil
+	return m
 }
-func (p *PosInfo[T]) RemoveInfoAt(pos Pos) {
-	if _, found := p.values[pos]; !found {
-		return
+func (m *SortedMap[K, V, O]) SetMany(elems ...struct {
+	Key K
+	Val V
+}) {
+	for _, pair := range elems {
+		m.Set(pair.Key, pair.Val)
 	}
-	i, _ := slices.BinarySearchFunc(p.indexes, pos, LesserSliceSortAdaptor[Pos])
-	p.indexes = slices.Delete(p.indexes, i, i+1)
-	delete(p.values, pos)
 }
-func (p *PosInfo[T]) String() string {
-	str := "[\n"
-	for _, pos := range p.indexes {
-		str += fmt.Sprintf("\t%v -> %v\n", pos, p.values[pos])
+func (m *SortedMap[K, V, O]) Delete(key K) *SortedMap[K, V, O] {
+	var order O
+	i, found := slices.BinarySearchFunc(m.indexes, key, order.SliceOrder)
+	if !found {
+		return m
+	}
+	m.indexes = slices.Delete(m.indexes, i, i+1)
+	m.values = slices.Delete(m.values, i, i+1)
+	return m
+}
+func (m *SortedMap[K, V, O]) Get(key K) (V, bool) {
+	var orderer O
+	if i, found := slices.BinarySearchFunc(m.indexes, key, orderer.SliceOrder); found {
+		return m.values[i], true
+	}
+	var v V
+	return v, false
+}
+func (m *SortedMap[K, V, O]) GetRef(key K) *V {
+	var orderer O
+	if i, found := slices.BinarySearchFunc(m.indexes, key, orderer.SliceOrder); found {
+		return &m.values[i]
+	}
+	return nil
+}
+func (m *SortedMap[K, V, O]) Len() int {
+	return len(m.indexes)
+}
+func (m *SortedMap[K, V, O]) Iter(iter func(key K, val V) bool) {
+	for i, key := range m.indexes {
+		val := m.values[i]
+		if !iter(key, val) {
+			break
+		}
+	}
+}
+func (m *SortedMap[K, V, O]) String() string {
+	str := "["
+	for i, key := range m.indexes {
+		val := m.values[i]
+		str += fmt.Sprintf("(%v: %v)", key, val)
+		if i != len(m.indexes)-1 {
+			str += ", "
+		}
 	}
 	return str + "]"
 }
 
-// Values is for go1.23 iterator feature
-//
-// go1.23+:
-//
-//	for pos, info := range posinfo.Values() { /* ... */ }
-//
-// before go1.23:
-//
-//	posinfo.Values()(func(pos Pos, info T) bool { /* ... */ })
-func (p *PosInfo[T]) Values() func(func(key Pos, val T) bool) {
-	return func(yield func(key Pos, val T) bool) {
-		for _, pos := range p.indexes {
-			if !yield(pos, p.values[pos]) {
-				return
-			}
-		}
-	}
-}
-
 func Main() {
-	l := NewPosInfo[string]()
-	l.AddMany(map[Pos]string{
-		Pos{File: "file1", Line: 1, Col: 1}: "1",
-		Pos{File: "file1", Line: 2, Col: 1}: "2",
-		Pos{File: "file1", Line: 2, Col: 3}: "3",
-		Pos{File: "file1", Line: 3, Col: 3}: "3.1",
-		Pos{File: "file2", Line: 2, Col: 1}: "5",
-		Pos{File: "file2", Line: 1, Col: 1}: "4",
-	})
-	// fmt.Println(l)
+
+	l := NewSortedMap[Pos, string](cmp.LesserSliceOrderer[Pos]{})
+	l.Set(Pos{File: "file1", Line: 1, Col: 1}, "1").
+		Set(Pos{File: "file1", Line: 2, Col: 1}, "3").
+		Set(Pos{File: "file1", Line: 1, Col: 2}, "2").
+		Set(Pos{File: "file2", Line: 2, Col: 1}, "5").
+		Set(Pos{File: "file2", Line: 1, Col: 2}, "4")
+
+	fmt.Println(l)
 	return
 	code := `var a, b int, d?, 42 float`
-	fmt.Println()
-	scanner := scan.Code(code)
-	v := ParseVar(scanner)
-	fmt.Println(v.Asts())
+	fmt.Println(code)
+
 }

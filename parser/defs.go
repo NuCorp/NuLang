@@ -15,12 +15,12 @@ func (p *Parser) parseSimpleVars() (varElemList []ast.VarElem) {
 		}
 		if p.scanner.CurrentToken() != tokens.IDENT {
 			p.errors[p.scanner.ConsumeTokenInfo().FromPos()] = fmt.Errorf("unexpected token")
-			p.skipTo(append(tokens.EoI(), tokens.COMA, tokens.EOF)...)
+			p.skipTo(append(tokens.EoI(), tokens.COMMA, tokens.EOF)...)
 			return nil // TODO: ERROR: return an AstError ?
 		}
 		varElem := &ast.NamedDef{}
 		varElem.Name = ast.MakeValue[string](p.scanner.ConsumeTokenInfo())
-		if p.scanner.CurrentToken() == tokens.COMA { // IDENT `,` IDENT --> multiple variable of the same type (without value)
+		if p.scanner.CurrentToken() == tokens.COMMA { // IDENT `,` IDENT --> multiple variable of the same type (without value)
 			p.scanner.ConsumeToken()
 			vars = append(vars, varElem)
 			continue
@@ -29,7 +29,7 @@ func (p *Parser) parseSimpleVars() (varElemList []ast.VarElem) {
 		if p.scanner.CurrentToken() == tokens.ASSIGN { // IDENT `=` Expr --> assignment declaration (it also might be: IDENT Type `=` Expr)
 			if len(vars) != 0 {
 				p.errors[p.scanner.CurrentPos()] = fmt.Errorf("unexpected '='. Cannot assign multiple variable with 1 '=', may be you wanted to use order binding")
-				p.skipTo(append(tokens.EoI(), tokens.COMA, tokens.EOF)...)
+				p.skipTo(append(tokens.EoI(), tokens.COMMA, tokens.EOF)...)
 				return nil // TODO: ERROR: return an AstError ?
 			}
 			varElem.Assign = p.scanner.ConsumeToken()
@@ -65,7 +65,7 @@ varElemLoop:
 		default:
 			p.addError(fmt.Errorf("unexpected token `%v` in variables definition", p.scanner.CurrentToken()))
 		}
-		if p.scanner.CurrentToken() != tokens.COMA {
+		if p.scanner.CurrentToken() != tokens.COMMA {
 			break varElemLoop
 		}
 		p.scanner.ConsumeToken()

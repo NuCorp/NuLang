@@ -7,7 +7,6 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"slices"
-	"sort"
 )
 
 func expect(scanner scan.Scanner, token tokens.Token) {
@@ -22,23 +21,21 @@ func skipTo(scanner scan.Scanner, toks ...tokens.Token) {
 	}
 }
 
-type KeyValueList[K, V any] []struct {
-	Key   K
-	Value V
+type tokenPosSliceOrder struct{}
+
+func (tokenPosSliceOrder) SliceOrder(left, right scan.TokenPos) int {
+	if left.IsBefore(right) {
+		return -1
+	}
+	if left.IsAfter(right) {
+		return 1
+	}
+	return 0
 }
 
-func (l KeyValueList[K, V]) SortOnKey(less func(l, r K) bool) {
-	sort.Slice(l, func(i, j int) bool {
-		return less(l[i].Key, l[j].Key)
-	})
-}
-func (l KeyValueList[K, V]) SortOnValue(less func(l, r V) bool) {
-	sort.Slice(l, func(i, j int) bool {
-		return less(l[i].Value, l[j].Value)
-	})
-}
+type ErrorMessagesList = SortedMap[scan.TokenPos, string, tokenPosSliceOrder]
 
-type ErrorMessages = KeyValueList[scan.TokenPos, string]
+var errs ErrorMessagesList
 
 type Ident = scan.TokenInfo
 
@@ -59,7 +56,7 @@ type Import struct {
 	rename optional.Value[Ident]
 }
 
-func (i Import) AstImport() ast.Import {
+func (i Import) Ast() ast.Import {
 	return ast.Import{
 		Header:   optional.Value[string]{},
 		Packages: array.Map(i.pkgs, Ident.String),
@@ -71,7 +68,7 @@ func (i Import) AstImport() ast.Import {
 type File struct {
 }
 
-func (f File) Asts() []ast.Ast {
+func (f File) Ast() ast.Ast {
 	return []ast.Ast{f.AstFile()}
 }
 func (f File) AstFile() ast.File {

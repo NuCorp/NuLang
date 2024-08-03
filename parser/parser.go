@@ -102,7 +102,7 @@ func (p *Parser) parseFunctionCall(expr ast.Ast, oparent tokens.Token) ast.Ast {
 		} else if p.scanner.CurrentToken() != tokens.CPAREN {
 			funcCall.AddOrderArgument(p.parseExpr())
 		}
-		if p.scanner.CurrentToken() == tokens.COMA {
+		if p.scanner.CurrentToken() == tokens.COMMA {
 			p.scanner.ConsumeToken()
 			continue
 		}

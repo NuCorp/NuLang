@@ -1,8 +1,11 @@
 package ast
 
-import "github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+import (
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"reflect"
+)
 
-type Value[T comparable] struct {
+type Value[T any] struct {
 	from  scan.TokenInfo
 	Value T
 }
@@ -20,7 +23,7 @@ func MakeValue[T comparable](from scan.TokenInfo) Value[T] {
 }
 
 func (v Value[T]) Eq(value T) bool {
-	return value == v.Value
+	return reflect.DeepEqual(v, value)
 }
 func (v Value[T]) Info() scan.TokenInfo {
 	return v.from
