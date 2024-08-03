@@ -159,6 +159,10 @@ type Literal[T any] struct {
 	Value T
 }
 
+func (l Literal[T]) IsConstexpr() bool {
+	return true
+}
+
 func (Literal[T]) nameBindingValueRef() {}
 func (l Literal[T]) CodePos() scan.TokenPos {
 	return l.Pos

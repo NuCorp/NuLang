@@ -200,6 +200,19 @@ func GetKeywordForText(text string) Token {
 	return tok
 }
 
+var strOp = func() map[string]Token {
+	ret := map[string]Token{}
+	for tok := operatorStart + 1; tok < operatorEnd; tok++ {
+		ret[tok.String()] = tok
+	}
+	return ret
+}()
+
+func OperatorFromStr(str string) (Token, bool) {
+	tok, ok := strOp[str]
+	return tok, ok
+}
+
 var tokenStr = map[Token]string{
 	EOF: "EOF",
 	ERR: "TokenError",

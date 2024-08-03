@@ -42,7 +42,7 @@ func (d *DotExpr) CodePos() scan.TokenPos {
 	return d.Pos
 }
 func (d *DotExpr) String() string {
-	str := strings.Join(array.Map(d.Idents, Ident.String), ".")
+	str := strings.Join(array.MapRef(d.Idents, (*Ident).String), ".")
 	if d.Pos != d.Idents[0].CodePos() {
 		str = "." + str
 	}

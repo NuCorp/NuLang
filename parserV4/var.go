@@ -53,7 +53,10 @@ func ParseVarDecl(s scan.Scanner, errors Errors) ast.VarList {
 		default:
 			errors.Set(
 				s.CurrentPos(),
-				fmt.Sprintf("invalid token: %v at then end of var declaration. Expected a comma `,` or the end of the instruction (new line or `;`"),
+				fmt.Sprintf(
+					"invalid token: %v at then end of var declaration. Expected a comma `,` or the end of the instruction (new line or `;`",
+					s.CurrentToken(),
+				),
 			)
 			return varList
 		}

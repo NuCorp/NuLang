@@ -6,6 +6,7 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV4/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils/maps"
 	"slices"
 )
 
@@ -167,13 +168,56 @@ func ParseFile(s scan.Scanner) ast.Ast {
 	return nil
 }
 
+var (
+	operatorOrder = map[tokens.Token]int{
+		tokens.ASKOR: 0,
+
+		tokens.TIME:     1,
+		tokens.DIV:      1,
+		tokens.FRAC_DIV: 1,
+		tokens.MOD:      1,
+		tokens.PLUS:     2,
+		tokens.MINUS:    2,
+
+		tokens.AND: 3,
+		tokens.OR:  4,
+		tokens.EQ:  5,
+		tokens.NEQ: 5,
+		tokens.GT:  5,
+		tokens.LT:  5,
+		tokens.GE:  5,
+		tokens.LE:  5,
+	}
+
+	binaryOperators = maps.Keys(operatorOrder)
+)
+
 func parseExpr(s scan.Scanner, scope scope, error Errors) ast.Expr {
+	var (
+		binopExpr        *ast.BinaryExpr
+		currentBinopExpr *ast.BinaryExpr
+	)
+
 	var expr ast.Expr
 
 	switch s.CurrentToken() {
 	case tokens.IDENT:
 		expr = &ast.IdentExpr{ident(s.ConsumeTokenInfo())}
-	case tokens.OPAREN: // expr = parseTupleExpr(s, errors)
+		if s.CurrentToken() == tokens.DOT {
+			// expr = continueDotExpr(s, expr.(*ast.IdentExpr), errors)
+		}
+		if s.CurrentToken().IsOneOf(tokens.PLUS_PLUS, tokens.MINUS_MINUS) {
+			// expr = UnaryOperator{Expr: expr, Op: s.ConsumeTokenInfo()}
+			break
+		}
+		if s.CurrentToken() == tokens.ASK {
+			// expr = UnaryOperator{Expr: expr, Op: s.ConsumeTokenInfo()}
+		}
+	case tokens.OPAREN:
+		// expr = parseTupleExpr(s, errors)
+		/*
+			handle ASK and ASKOR operators
+		*/
 	case tokens.FUNC:
 		// expr = parseFuncType(s, errors)
 		/*
@@ -189,7 +233,11 @@ func parseExpr(s scan.Scanner, scope scope, error Errors) ast.Expr {
 		*/
 	case tokens.IF: // expr = parseIfExpr(s, errors)
 	case tokens.FOR: // expr = parseForExpr(s, errors)
-	case tokens.STRUCT, tokens.INTERFACE, tokens.LOR, tokens.ENUM: // expr = parseTypeExpr(s, scope, errors)
+	case tokens.STRUCT, tokens.INTERFACE, tokens.LOR, tokens.ENUM, tokens.TYPEOF:
+		// expr = parseTypeExpr(s, scope, errors)
+		if s.CurrentToken() == tokens.OBRAC {
+			// expr = continueInitExpr(s, expr.(ast.TypeExpr), errors)
+		}
 	case tokens.NIL: // expr = ast.Nil{At: s.ConsumeTokenInfo().Pos()}
 	case tokens.OBRAK: // expr = parseLiteralContainer(s, errors)
 	case tokens.TRY: // expr = parseTryExpr(s, errors)
@@ -197,15 +245,73 @@ func parseExpr(s scan.Scanner, scope scope, error Errors) ast.Expr {
 		switch {
 		case s.CurrentToken().IsLiteral(): // parseLiteralExpr(s, scope, errors)
 		case slices.Equal(s.LookUpTokens(2), []tokens.Token{tokens.OBRAC, tokens.OBRAC}): // expr = parseTypeExpr(s, scope, errors)
+		default:
+			// error here
 		}
 	}
-	if identExpr, ok := expr.(*ast.IdentExpr); ok && s.CurrentToken() == tokens.DOT {
-		_ = identExpr
-		// expr = continueDotExpr(s, identExpr, errors)
+
+	if s.CurrentToken().IsOneOf(binaryOperators...) {
+		newBinopExpr := &ast.BinaryExpr{
+			Left: expr,
+			Op:   ast.Operator(s.ConsumeTokenInfo().String()),
+		}
+		if binopExpr == nil {
+			binopExpr = newBinopExpr
+		} else {
+			currentBinopExpr.Right = newBinopExpr
+		}
+		currentBinopExpr = newBinopExpr
+	} else {
+		if binopExpr == nil {
+			return expr
+		}
+		currentBinopExpr.Right = expr
+		return organizeBinaryOperator(binopExpr)
 	}
-	if typeExpr, ok := expr.(ast.TypeExpr); ok && s.CurrentToken() == tokens.OBRAC {
-		_ = typeExpr
-		// expr = continueInitExpr(s, typeExpr, errors)
-	}
+
 	return nil
+}
+
+func organizeBinaryOperator(root *ast.BinaryExpr) *ast.BinaryExpr {
+	current := root
+
+	for {
+		next, ok := current.Right.(*ast.BinaryExpr)
+		if !ok {
+			return root
+		}
+
+		opCur, _ := tokens.OperatorFromStr(string(current.Op))
+		opNext, _ := tokens.OperatorFromStr(string(next.Op))
+
+		if operatorOrder[opCur] < operatorOrder[opNext] {
+			prevNext := *next
+			*next = ast.BinaryExpr{
+				Left:  current.Left,
+				Op:    current.Op,
+				Right: next.Left,
+			}
+			*current = ast.BinaryExpr{ // current
+				Left:  next, // will become newLeft
+				Op:    prevNext.Op,
+				Right: prevNext.Right,
+			}
+
+			/*
+						OP1 (current)
+						|		\
+						a	 	OP2 (next)
+								|	\
+								b	...
+				==>
+						OP2 (current)
+						|			\
+						OP1 (next)	...
+						|	\
+						a	b
+			*/
+		} else {
+			current = next
+		}
+	}
 }
