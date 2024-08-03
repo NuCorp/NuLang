@@ -2,6 +2,7 @@ package parserV4
 
 import (
 	"fmt"
+
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV4/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
