@@ -141,8 +141,9 @@ func assert(cond bool) {
 	}
 }
 
-func skipTo(s scan.Scanner, t1 tokens.Token, or ...tokens.Token) {
-	for !s.CurrentToken().IsOneOf(append(append(or, tokens.EOF), t1)...) {
+func skipTo(s scan.Scanner, t ...tokens.Token) {
+	assert(len(t) > 0)
+	for !s.CurrentToken().IsOneOf(append(t, tokens.EOF)...) {
 		s.ConsumeTokenInfo()
 	}
 }
@@ -166,6 +167,85 @@ type scope interface {
 
 func ParseFile(s scan.Scanner) ast.Ast {
 	return nil
+}
+
+func parseImportedPkg(s scan.Scanner, errors Errors) ast.ImportedPkg {
+	if s.CurrentToken() != tokens.IDENT {
+		errors.Set(s.CurrentPos(), fmt.Sprintf("invalid token: %v; expected an identifier for the package name", s.CurrentToken()))
+		return ast.ImportedPkg{}
+	}
+
+	pkg := ast.ImportedPkg{
+		Package: ast.DotIdent{Idents: []ast.Ident{ident(s.ConsumeTokenInfo())}},
+	}
+
+	for s.CurrentToken() == tokens.DOT {
+		s.ConsumeTokenInfo()
+
+		if s.CurrentToken() != tokens.IDENT {
+			errors.Set(s.CurrentPos(), fmt.Sprintf("invalid token: %v; expected an identifier for the package name", s.CurrentToken()))
+			return pkg
+		}
+
+		pkg.Package.Idents = append(pkg.Package.Idents, ident(s.ConsumeTokenInfo()))
+	}
+
+	if s.CurrentToken() != tokens.AS {
+		return pkg
+	}
+
+	s.ConsumeTokenInfo()
+
+	if s.CurrentToken() != tokens.IDENT {
+		errors.Set(s.CurrentPos(), fmt.Sprintf("invalid token: %v; expected an identifier for the package alias", s.CurrentToken()))
+		return pkg
+	}
+
+	pkg.Renamed.Set(ident(s.ConsumeTokenInfo()))
+
+	return pkg
+}
+
+func parseImport(s scan.Scanner, errors Errors) ast.Import {
+	assert(s.CurrentToken() == tokens.IMPORT)
+	impt := ast.Import{
+		Kw: s.ConsumeTokenInfo().FromPos(),
+	}
+
+	groupeImport := s.CurrentToken() == tokens.OPAREN
+
+	if groupeImport {
+		s.ConsumeTokenInfo()
+	}
+
+	if s.CurrentToken() == tokens.STR {
+		impt.Project.Set(ast.Literal[string]{
+			Pos:   s.CurrentPos(),
+			Value: s.ConsumeTokenInfo().Value().(string),
+		})
+	}
+
+	if s.CurrentToken() != tokens.IDENT {
+		errors.Set(s.CurrentPos(), fmt.Sprintf("invalid token: %v; expected an identifier", s.CurrentToken()))
+		if !groupeImport {
+			return impt
+		}
+		skipTo(s, tokens.EoI()...)
+	}
+
+	for {
+		impt.Packages = append(impt.Packages, parseImportedPkg(s, errors))
+		skipTo(s, tokens.EoI()...)
+
+		if !groupeImport {
+			return impt
+		}
+
+		if s.CurrentToken() == tokens.CPAREN {
+			s.ConsumeTokenInfo()
+			return impt
+		}
+	}
 }
 
 var (

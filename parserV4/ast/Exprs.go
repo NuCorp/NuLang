@@ -32,27 +32,27 @@ func (i *IdentExpr) IsConstexpr() bool {
 	panic("implement me")
 }
 
-// DotExpr can be a TypeExpr too
 type DotExpr struct {
 	Pos    scan.TokenPos
+	First  Expr // can be IdentExpr
 	Idents []Ident
 }
 
 func (d *DotExpr) CodePos() scan.TokenPos {
 	return d.Pos
 }
+
 func (d *DotExpr) String() string {
-	str := strings.Join(array.MapRef(d.Idents, (*Ident).String), ".")
-	if d.Pos != d.Idents[0].CodePos() {
-		str = "." + str
+	str := ""
+	if d.First == nil {
+		str = "."
 	}
-	return str
+	return str + strings.Join(array.MapRef(d.Idents, (*Ident).String), ".")
 }
+
 func (d *DotExpr) IsConstexpr() bool {
-	for _, i := range d.Idents {
-		_ = i // _, ok := i.(ConstexprDecl); if ! ok { return false }
-	}
-	return true
+	//TODO implement me
+	panic("implement me")
 }
 
 type Operator string
