@@ -99,3 +99,10 @@ func (p Package) CodePos() scan.TokenPos {
 func (p Package) String() string {
 	return "package " + p.Name.String()
 }
+
+type File struct {
+	Package Package
+	Imports []Import
+
+	Decl []Decl
+}
