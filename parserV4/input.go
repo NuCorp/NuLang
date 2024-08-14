@@ -169,6 +169,25 @@ func ParseFile(s scan.Scanner) ast.Ast {
 	return nil
 }
 
+func parseDotIdent(s scan.Scanner, errors Errors) ast.DotIdent {
+	assert(s.CurrentToken() == tokens.IDENT)
+
+	dot := ast.DotIdent{Idents: []ast.Ident{ident(s.ConsumeTokenInfo())}}
+
+	for s.CurrentToken() == tokens.DOT {
+		s.ConsumeTokenInfo()
+
+		if s.CurrentToken() != tokens.IDENT {
+			errors.Set(s.CurrentPos(), fmt.Sprintf("invalid token: %v; expected an identifier for the package name", s.CurrentToken()))
+			return dot
+		}
+
+		dot.Idents = append(dot.Idents, ident(s.ConsumeTokenInfo()))
+	}
+
+	return dot
+}
+
 func parseImportedPkg(s scan.Scanner, errors Errors) ast.ImportedPkg {
 	if s.CurrentToken() != tokens.IDENT {
 		errors.Set(s.CurrentPos(), fmt.Sprintf("invalid token: %v; expected an identifier for the package name", s.CurrentToken()))
@@ -176,18 +195,7 @@ func parseImportedPkg(s scan.Scanner, errors Errors) ast.ImportedPkg {
 	}
 
 	pkg := ast.ImportedPkg{
-		Package: ast.DotIdent{Idents: []ast.Ident{ident(s.ConsumeTokenInfo())}},
-	}
-
-	for s.CurrentToken() == tokens.DOT {
-		s.ConsumeTokenInfo()
-
-		if s.CurrentToken() != tokens.IDENT {
-			errors.Set(s.CurrentPos(), fmt.Sprintf("invalid token: %v; expected an identifier for the package name", s.CurrentToken()))
-			return pkg
-		}
-
-		pkg.Package.Idents = append(pkg.Package.Idents, ident(s.ConsumeTokenInfo()))
+		Package: parseDotIdent(s, errors),
 	}
 
 	if s.CurrentToken() != tokens.AS {
@@ -245,6 +253,14 @@ func parseImport(s scan.Scanner, errors Errors) ast.Import {
 			s.ConsumeTokenInfo()
 			return impt
 		}
+	}
+}
+
+func parsePackage(s scan.Scanner, errors Errors) ast.Package {
+	assert(s.CurrentToken() == tokens.PKG)
+	return ast.Package{
+		Kw:   s.ConsumeTokenInfo().FromPos(),
+		Name: parseDotIdent(s, errors),
 	}
 }
 
@@ -313,7 +329,12 @@ func parseExpr(s scan.Scanner, scope scope, error Errors) ast.Expr {
 		*/
 	case tokens.IF: // expr = parseIfExpr(s, errors)
 	case tokens.FOR: // expr = parseForExpr(s, errors)
-	case tokens.STRUCT, tokens.INTERFACE, tokens.LOR, tokens.ENUM, tokens.TYPEOF:
+	case tokens.TYPEOF:
+		// expr = parseTypeExpr(s, scope, errors)
+		if s.CurrentToken() == tokens.DOT {
+			// expr = continueDotExpr(s, expr.(ast.TypeExpr), scope, errors)
+		}
+	case tokens.STRUCT, tokens.INTERFACE, tokens.LOR, tokens.ENUM:
 		// expr = parseTypeExpr(s, scope, errors)
 		if s.CurrentToken() == tokens.OBRAC {
 			// expr = continueInitExpr(s, expr.(ast.TypeExpr), errors)

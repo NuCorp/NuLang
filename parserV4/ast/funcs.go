@@ -1,0 +1,70 @@
+package ast
+
+import (
+	"github.com/DarkMiMolle/GTL/array"
+	"github.com/DarkMiMolle/GTL/optional"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"strings"
+)
+
+type Scope struct {
+	Body []Ast
+}
+
+type Parameter struct {
+	Named   optional.Value[scan.TokenPos]
+	Name    Ident
+	Type    TypeExpr
+	Default Expr // may be nil
+}
+
+func (p *Parameter) CodePos() scan.TokenPos {
+	if named, hasValue := p.Named.LookupValue(); hasValue {
+		return named
+	}
+	return p.Name.CodePos()
+}
+
+func (p *Parameter) String() string {
+	str := p.Name.String()
+
+	if p.Named.HasValue() {
+		str = "*" + str
+	}
+
+	str += p.Type.String()
+
+	if p.Default != nil {
+		str += " = " + p.Default.String()
+	}
+
+	return str
+}
+
+type FuncDecl struct {
+	Func       scan.TokenPos
+	Name       Ident
+	Param      []Parameter
+	Variadic   optional.Value[*Parameter]
+	ReturnType TypeExpr
+	Body       Scope
+}
+
+func (f *FuncDecl) CodePos() scan.TokenPos {
+	return f.Func
+}
+
+func (f *FuncDecl) String() string {
+	str := "func " + f.Name.String() + "(" + strings.Join(array.MapRef(f.Param, (*Parameter).String), ", ")
+
+	if f.Variadic.HasValue() && len(f.Param) > 0 {
+		str += ", " + f.Variadic.Value().String()
+	}
+
+	return str
+}
+
+type FuncType struct {
+	Params     []Parameter
+	ReturnType TypeExpr
+}

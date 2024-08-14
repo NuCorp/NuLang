@@ -86,3 +86,16 @@ func (i Import) String() string {
 	str += "(\n\t" + strings.Join(array.Map(i.Packages, ImportedPkg.String), "\n\t") + ")"
 	return str
 }
+
+type Package struct {
+	Kw   scan.TokenPos
+	Name DotIdent
+}
+
+func (p Package) CodePos() scan.TokenPos {
+	return p.Kw
+}
+
+func (p Package) String() string {
+	return "package " + p.Name.String()
+}
