@@ -42,12 +42,19 @@ func (p *Parameter) String() string {
 }
 
 type FuncDecl struct {
-	Func       scan.TokenPos
-	Name       Ident
-	Param      []Parameter
-	Variadic   optional.Value[*Parameter]
+	Func        scan.TokenPos
+	IsConstexpr bool
+
+	Name     Ident
+	MayCrash bool
+	MayThrow bool
+
+	Param    []Parameter
+	Variadic optional.Value[*Parameter]
+
 	ReturnType TypeExpr
-	Body       Scope
+
+	Body Scope
 }
 
 func (f *FuncDecl) CodePos() scan.TokenPos {

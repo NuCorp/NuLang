@@ -161,8 +161,21 @@ func ref[T any](t T) *T {
 //
 
 type scope interface {
-	IsValidExpr(s scan.Scanner) bool
-	ParseFunction() func(s scan.Scanner, scope scope, errors Errors) ast.Ast
+	is(target scope) bool
+}
+
+type scopeFor[T ast.Ast] struct {
+	Element *T
+	From    scope
+}
+
+func (s *scopeFor[T]) is(target scope) bool {
+	if target, ok := target.(*scopeFor[T]); ok {
+		*target = *s
+		return true
+	}
+
+	return s.From != nil && s.From.is(target)
 }
 
 func ParseFile(s scan.Scanner) ast.Ast {
