@@ -1,7 +1,8 @@
 package parserV2
 
 import (
-	"github.com/DarkMiMolle/GTL/optional"
+	"github.com/LicorneSharing/GTL/optional"
+
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV2/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"

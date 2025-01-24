@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/DarkMiMolle/GTL/optional"
+	"github.com/LicorneSharing/GTL/optional"
 )
 
 type Ident = string

@@ -1,10 +1,12 @@
 package ast
 
 import (
-	"github.com/DarkMiMolle/GTL/array"
-	"github.com/DarkMiMolle/GTL/optional"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"strings"
+
+	"github.com/LicorneSharing/GTL/optional"
+	"github.com/LicorneSharing/GTL/slices"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 )
 
 type Ast interface {
@@ -19,10 +21,6 @@ type Expr interface {
 
 type Decl interface {
 	Ast
-}
-
-type TypeExpr interface {
-	Expr
 }
 
 type Ident struct {
@@ -48,7 +46,7 @@ func (d DotIdent) CodePos() scan.TokenPos {
 	return d.Pos
 }
 func (d DotIdent) String() string {
-	return strings.Join(array.MapRef(d.Idents, (*Ident).String), ".")
+	return strings.Join(slices.MapRef(d.Idents, (*Ident).String), ".")
 }
 
 type ImportedPkg struct {
@@ -83,7 +81,7 @@ func (i Import) String() string {
 		return str
 	}
 
-	str += "(\n\t" + strings.Join(array.Map(i.Packages, ImportedPkg.String), "\n\t") + ")"
+	str += "(\n\t" + strings.Join(slices.Map(i.Packages, ImportedPkg.String), "\n\t") + ")"
 	return str
 }
 

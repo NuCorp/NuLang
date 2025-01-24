@@ -2,12 +2,13 @@ package scan
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"unicode"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 type tokenizeChar struct {
-	token TokenInfo
+	token tokenInfo
 
 	isEscaped       bool
 	isUnicodeEscape bool

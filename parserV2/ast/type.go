@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/DarkMiMolle/GTL/optional"
+import "github.com/LicorneSharing/GTL/optional"
 
 type TypeDef struct {
 	TypeKw Keyword

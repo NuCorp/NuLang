@@ -2,13 +2,14 @@ package scan
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"strings"
 	"unicode"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 type tokenizeStr struct {
-	token TokenInfo
+	token tokenInfo
 
 	value string
 

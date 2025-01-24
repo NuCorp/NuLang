@@ -2,114 +2,14 @@ package parserV4
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/cmp"
+	"slices"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV4/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils/maps"
-	"slices"
 )
-
-type KeyVal[K, V any] struct {
-	Key   K
-	Value V
-}
-
-type SortedMap[K, V any, O cmp.SliceOrderer[K]] struct {
-	elems []KeyVal[K, V]
-}
-
-func NewSortedMap[K, V any, O cmp.SliceOrderer[K]](_ O) *SortedMap[K, V, O] {
-	var o O
-	if any(o) == nil {
-		panic("Orderer type must be a literal type or struct")
-	}
-	return &SortedMap[K, V, O]{}
-}
-
-func (m *SortedMap[K, V, O]) Set(key K, val V) *SortedMap[K, V, O] {
-	var orderer O
-	elem := KeyVal[K, V]{key, val}
-	i, found := slices.BinarySearchFunc(m.elems, elem, func(left, right KeyVal[K, V]) int {
-		return orderer.SliceOrder(left.Key, right.Key)
-	})
-	if !found {
-		m.elems = slices.Insert(m.elems, i, elem)
-	} else {
-		m.elems[i] = elem
-	}
-	return m
-}
-func (m *SortedMap[K, V, O]) SetMany(elems ...KeyVal[K, V]) {
-	for _, pair := range elems {
-		m.Set(pair.Key, pair.Value)
-	}
-}
-func (m *SortedMap[K, V, O]) Delete(key K) *SortedMap[K, V, O] {
-	var orderer O
-	elem := KeyVal[K, V]{Key: key}
-	i, found := slices.BinarySearchFunc(m.elems, elem, func(left, right KeyVal[K, V]) int {
-		return orderer.SliceOrder(left.Key, right.Key)
-	})
-	if !found {
-		return m
-	}
-	m.elems = slices.Delete(m.elems, i, i+1)
-	return m
-}
-func (m *SortedMap[K, V, O]) Get(key K) (V, bool) {
-	var orderer O
-	elem := KeyVal[K, V]{Key: key}
-
-	if i, found := slices.BinarySearchFunc(m.elems, elem, func(left, right KeyVal[K, V]) int {
-		return orderer.SliceOrder(left.Key, right.Key)
-	}); found {
-		return m.elems[i].Value, true
-	}
-	var v V
-	return v, false
-}
-func (m *SortedMap[K, V, O]) GetRef(key K) *V {
-	var orderer O
-	elem := KeyVal[K, V]{Key: key}
-
-	if i, found := slices.BinarySearchFunc(m.elems, elem, func(left, right KeyVal[K, V]) int {
-		return orderer.SliceOrder(left.Key, right.Key)
-	}); found {
-		return &m.elems[i].Value
-	}
-	return nil
-}
-func (m *SortedMap[K, V, O]) Len() int {
-	return len(m.elems)
-}
-func (m *SortedMap[K, V, O]) Iter(iter func(key K, val V) bool) {
-	for _, elem := range m.elems {
-		if !iter(elem.Key, elem.Value) {
-			break
-		}
-	}
-}
-func (m *SortedMap[K, V, O]) String() string {
-	str := "["
-	for i, elem := range m.elems {
-		str += fmt.Sprintf("(%v: %v)", elem.Key, elem.Value)
-		if i != len(m.elems)-1 {
-			str += ", "
-		}
-	}
-	return str + "]"
-}
-
-func CastSortedMapOrder[K, V any, O1, O2 cmp.SliceOrderer[K]](from *SortedMap[K, V, O1], to *SortedMap[K, V, O2]) {
-	to.elems = make([]KeyVal[K, V], len(from.elems))
-	copy(to.elems, from.elems)
-
-	var order O2
-	slices.SortFunc(to.elems, func(left, right KeyVal[K, V]) int {
-		return order.SliceOrder(left.Key, right.Key)
-	})
-}
 
 //
 
@@ -125,10 +25,10 @@ func (tokenPosSliceOrder) SliceOrder(left, right scan.TokenPos) int {
 	return 0
 }
 
-type Errors = *SortedMap[scan.TokenPos, string, tokenPosSliceOrder] // TODO: Errors = *SortedMap[scan.TokenPos, error, tokenPossSliceOrder]
+type Errors = *container.SortedMap[scan.TokenPos, string, tokenPosSliceOrder] // TODO: Errors = *SortedMap[scan.TokenPos, error, tokenPossSliceOrder]
 
 func NewErrorsMap() Errors {
-	return &SortedMap[scan.TokenPos, string, tokenPosSliceOrder]{}
+	return &container.SortedMap[scan.TokenPos, string, tokenPosSliceOrder]{}
 }
 
 func requires(s scan.Scanner, t1 tokens.Token, or ...tokens.Token) {
@@ -145,6 +45,34 @@ func skipTo(s scan.Scanner, t ...tokens.Token) {
 	assert(len(t) > 0)
 	for !s.CurrentToken().IsOneOf(append(t, tokens.EOF)...) {
 		s.ConsumeTokenInfo()
+	}
+}
+
+func skipToEOI(s scan.Scanner, t ...tokens.Token) {
+	skipTo(s, append(tokens.EoI(), t...)...)
+}
+
+func ignore(s scan.Scanner, t ...tokens.Token) {
+	for s.CurrentToken().IsOneOf(t...) && s.CurrentToken() != tokens.EOF {
+		s.ConsumeTokenInfo()
+	}
+}
+
+func ignoreOnce(s scan.Scanner, t tokens.Token) {
+	if s.CurrentToken() == t {
+		s.ConsumeTokenInfo()
+	}
+}
+
+func commaList(s scan.Scanner, parse func() bool) {
+	for {
+		if !parse() {
+			return
+		}
+
+		if s.CurrentToken() != tokens.COMMA {
+			return
+		}
 	}
 }
 
@@ -367,7 +295,7 @@ func parseExpr(s scan.Scanner, scope scope, error Errors) ast.Expr {
 	if s.CurrentToken().IsOneOf(binaryOperators...) {
 		newBinopExpr := &ast.BinaryExpr{
 			Left: expr,
-			Op:   ast.Operator(s.ConsumeTokenInfo().String()),
+			Op:   ast.Operator(s.ConsumeTokenInfo().RawString()),
 		}
 		if binopExpr == nil {
 			binopExpr = newBinopExpr

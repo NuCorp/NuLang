@@ -1,12 +1,14 @@
 package parserV3
 
 import (
-	"github.com/DarkMiMolle/GTL/array"
-	"github.com/DarkMiMolle/GTL/optional"
+	"slices"
+
+	"github.com/LicorneSharing/GTL/array"
+	"github.com/LicorneSharing/GTL/optional"
+
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV3/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
-	"slices"
 )
 
 func expect(scanner scan.Scanner, token tokens.Token) {

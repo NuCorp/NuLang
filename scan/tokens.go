@@ -3,44 +3,72 @@ package scan
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
-type TokenPos struct {
+type TokenPos interface {
+	Col() int
+	Line() int
+	AtNextCol() TokenPos
+	AtNextLine() TokenPos
+	FileRef() string
+	IsValid() bool
+	IsBefore(pos TokenPos) bool
+	IsAfter(pos TokenPos) bool
+
+	tokenPos() tokenPos
+}
+
+type tokenPos struct {
 	fileRef   string
 	col, line int
 }
 
-func (pos TokenPos) Col() int  { return pos.col }
-func (pos TokenPos) Line() int { return pos.line }
-func (pos TokenPos) String() string {
+func (pos tokenPos) Col() int  { return pos.col }
+func (pos tokenPos) Line() int { return pos.line }
+func (pos tokenPos) String() string {
 	return fmt.Sprintf("%v:%v (col %v)", pos.fileRef, pos.line+1, pos.col)
 }
-func (pos TokenPos) AtNextCol() TokenPos {
+func (pos tokenPos) AtNextCol() TokenPos {
 	pos.col++
 	return pos
 }
-func (pos TokenPos) AtNextLine() TokenPos {
+func (pos tokenPos) AtNextLine() TokenPos {
 	pos.line++
 	return pos
 }
-func (pos TokenPos) FileRef() string { return pos.fileRef }
-func (pos TokenPos) IsValid() bool   { return pos.fileRef != "" }
-func (pos TokenPos) IsBefore(p TokenPos) bool {
-	return pos.line < p.line || (pos.line == p.line && pos.col < p.col)
+func (pos tokenPos) FileRef() string { return pos.fileRef }
+func (pos tokenPos) IsValid() bool   { return pos.fileRef != "" }
+func (pos tokenPos) IsBefore(p TokenPos) bool {
+	return pos.tokenPos().line < p.tokenPos().line || (pos.line == p.tokenPos().line && pos.col < p.tokenPos().col)
 }
-func (pos TokenPos) IsAfter(p TokenPos) bool {
-	return pos.line > p.line || (pos.line == p.line && pos.col > p.col)
+func (pos tokenPos) IsAfter(p TokenPos) bool {
+	return pos.tokenPos().line > p.tokenPos().line || (pos.line == p.tokenPos().line && pos.col > p.tokenPos().col)
+}
+func (pos tokenPos) tokenPos() tokenPos {
+	return pos
 }
 func InvalidTokenPos() TokenPos {
-	return TokenPos{}
+	return tokenPos{}
 }
 func InteractiveTokenPos() TokenPos {
-	return TokenPos{fileRef: config.InteractiveFile}
+	return tokenPos{fileRef: config.InteractiveFile}
 }
 
-type TokenInfo struct {
+type TokenInfo interface {
+	Token() tokens.Token
+	RawString() string
+	PrintableString() string
+	Value() any
+	FromPos() TokenPos
+	ToPos() TokenPos
+
+	tokenInfo() tokenInfo
+}
+
+type tokenInfo struct {
 	rawValue string
 	token    tokens.Token
 	from, to TokenPos
@@ -50,15 +78,15 @@ type TokenInfo struct {
 	errorRef int
 }
 
-func (t TokenInfo) Token() tokens.Token { return t.token }
-func (t TokenInfo) RawString() string   { return t.rawValue }
-func (t TokenInfo) String() string {
+func (t tokenInfo) Token() tokens.Token { return t.token }
+func (t tokenInfo) RawString() string   { return t.rawValue }
+func (t tokenInfo) String() string {
 	if t.value != nil {
 		return fmt.Sprint(t.value)
 	}
 	return t.RawString()
 }
-func (t TokenInfo) PrintableString() (str string) {
+func (t tokenInfo) PrintableString() (str string) {
 	defer func() {
 		if t.token == tokens.ERR {
 			str = "\\ERROR{ " + t.rawValue + " }"
@@ -79,16 +107,17 @@ func (t TokenInfo) PrintableString() (str string) {
 		return t.token.String()
 	}
 }
-func (t TokenInfo) Value() any        { return t.value }
-func (t TokenInfo) FromPos() TokenPos { return t.from }
-func (t TokenInfo) ToPos() TokenPos   { return t.to }
+func (t tokenInfo) Value() any           { return t.value }
+func (t tokenInfo) FromPos() TokenPos    { return t.from }
+func (t tokenInfo) ToPos() TokenPos      { return t.to }
+func (t tokenInfo) tokenInfo() tokenInfo { return t }
 
 type CodeToken []TokenInfo
 
 func (code CodeToken) String() string {
 	str := ""
 	for idx, tok := range code {
-		if idx == len(code)-1 && tok.token.IsEoI() {
+		if idx == len(code)-1 && tok.tokenInfo().token.IsEoI() {
 			break
 		}
 		str += tok.PrintableString() + " "
@@ -97,11 +126,11 @@ func (code CodeToken) String() string {
 }
 func (code CodeToken) TokenList() []tokens.Token {
 	toks := make([]tokens.Token, 0, len(code))
-	for idx, tokenInfo := range code {
-		if idx == len(code)-1 && tokenInfo.token.IsEoI() {
+	for idx, info := range code {
+		if idx == len(code)-1 && info.tokenInfo().token.IsEoI() {
 			break
 		}
-		toks = append(toks, tokenInfo.Token())
+		toks = append(toks, info.Token())
 	}
 	return toks
 }

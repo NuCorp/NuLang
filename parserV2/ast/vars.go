@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/DarkMiMolle/GTL/optional"
+	"github.com/LicorneSharing/GTL/optional"
 )
 
 // VarDeclaration is for variable declaration using the `var` keyword

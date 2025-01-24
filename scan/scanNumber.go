@@ -2,10 +2,11 @@ package scan
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"strings"
 	"unicode"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 type tokenizeInt struct {
@@ -13,7 +14,7 @@ type tokenizeInt struct {
 
 	base uint
 
-	token TokenInfo
+	token tokenInfo
 }
 
 func (t *tokenizeInt) validate(r rune, pos TokenPos) Tokenizer {
@@ -68,7 +69,7 @@ func (t *tokenizeInt) Tokenize(r rune, pos TokenPos) (nextScanner Tokenizer) {
 
 type tokenizeFloat struct {
 	tokenizeInt
-	token      TokenInfo
+	token      tokenInfo
 	floatPower uint
 }
 
@@ -138,7 +139,7 @@ func (t *tokenizeFloat) Tokenize(r rune, pos TokenPos) Tokenizer {
 type tokenizeFraction struct {
 	tokenizeFloat
 
-	token       TokenInfo
+	token       tokenInfo
 	repeatValue uint
 	repeatPower uint
 }

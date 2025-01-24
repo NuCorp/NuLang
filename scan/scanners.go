@@ -3,14 +3,20 @@ package scan
 import (
 	"bufio"
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"os"
 	"reflect"
 	"strings"
 	"unicode"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
+type Base interface {
+	Scan() bool
+}
+
 type Scanner interface {
+	Base
 	CurrentTokenInfo() TokenInfo
 	CurrentToken() tokens.Token
 	CurrentPos() TokenPos
@@ -20,13 +26,110 @@ type Scanner interface {
 	LookUpTokens(how int) []tokens.Token
 	Next(offset int) TokenInfo
 	Prev(offset int) TokenInfo
-	Scan() bool
-	IsEnded() bool
 	Clone() Scanner
+	IsEnded() bool
+}
+
+type common[T interface{ Scan() bool }] struct {
+	scanner T
+	tokens  CodeToken
+	current int
+	ended   bool
+}
+
+func (c *common[T]) IsEnded() bool {
+	return c.ended && c.current >= len(c.tokens)
+}
+func (c *common[T]) CurrentTokenInfo() TokenInfo {
+	if c.IsEnded() {
+		last := c.Prev(1).tokenInfo()
+		last.token = tokens.EOF
+		last.from = last.to
+		return last
+	}
+	if c.current >= len(c.tokens) {
+		c.ended = c.scanner.Scan()
+	}
+	return c.tokens[c.current]
+}
+func (c *common[T]) CurrentToken() tokens.Token {
+	return c.CurrentTokenInfo().Token()
+}
+func (c *common[T]) CurrentPos() TokenPos {
+	return c.CurrentTokenInfo().FromPos()
+}
+func (c *common[T]) ConsumeTokenInfo() TokenInfo {
+	defer func() {
+		if !c.IsEnded() {
+			c.current++
+		}
+	}()
+	return c.CurrentTokenInfo()
+}
+func (c *common[T]) ConsumeToken() tokens.Token {
+	return c.ConsumeTokenInfo().Token()
+}
+func (c *common[T]) LookUp(how int) CodeToken {
+	if how == 0 {
+		return CodeToken{c.CurrentTokenInfo()}
+	}
+
+	if how == -1 {
+		how = 0
+	}
+
+	defer func(current int) {
+		c.current = current
+	}(c.current)
+
+	codeToken := make(CodeToken, 1, how+1)
+
+	codeToken[0] = c.ConsumeTokenInfo()
+
+	for len(codeToken) != cap(codeToken) || how == 0 {
+		codeToken = append(codeToken, c.ConsumeTokenInfo())
+	}
+	return codeToken
+}
+func (c *common[T]) LookUpTokens(how int) []tokens.Token {
+	return c.LookUp(how).TokenList()
+}
+func (c *common[T]) Next(offset int) TokenInfo {
+	if offset == 0 {
+		return c.CurrentTokenInfo()
+	}
+	if offset < 0 {
+		return c.Prev(-offset)
+	}
+
+	return c.LookUp(offset)[offset]
+}
+func (c *common[T]) Prev(offset int) TokenInfo {
+	if offset == 0 {
+		return c.CurrentTokenInfo()
+	}
+	if offset < 0 {
+		return c.Next(-offset)
+	}
+
+	if c.current-offset < 0 {
+		return c.tokens[0]
+	}
+	return c.tokens[c.current-offset]
+}
+func (c *common[T]) Clone() Scanner {
+	scanner := reflect.ValueOf(c.scanner)
+	cpy := reflect.New(scanner.Type().Elem())
+	cpy.Elem().Set(scanner.Elem())
+	if !cpy.Elem().FieldByName("commonScanner").IsValid() {
+		return cpy.Interface().(Scanner)
+	}
+	cpy.Elem().FieldByName("commonScanner").FieldByName("Scanner").Set(cpy)
+	return cpy.Interface().(Scanner)
 }
 
 type commonScanner struct {
-	Scanner
+	Base
 	tokens  CodeToken
 	current int
 	ended   bool
@@ -35,9 +138,10 @@ type commonScanner struct {
 func (c *commonScanner) IsEnded() bool {
 	return c.ended && c.current >= len(c.tokens)
 }
+
 func (c *commonScanner) CurrentTokenInfo() TokenInfo {
 	if c.IsEnded() {
-		last := c.Prev(1)
+		last := c.Prev(1).tokenInfo()
 		last.token = tokens.EOF
 		last.from = last.to
 		return last
@@ -113,7 +217,7 @@ func (c *commonScanner) Prev(offset int) TokenInfo {
 	return c.tokens[c.current-offset]
 }
 func (c *commonScanner) Clone() Scanner {
-	scanner := reflect.ValueOf(c.Scanner)
+	scanner := reflect.ValueOf(c.Base)
 	cpy := reflect.New(scanner.Type().Elem())
 	cpy.Elem().Set(scanner.Elem())
 	if !cpy.Elem().FieldByName("commonScanner").IsValid() {
@@ -123,14 +227,14 @@ func (c *commonScanner) Clone() Scanner {
 	return cpy.Interface().(Scanner)
 }
 
-type CodeScanner struct {
-	commonScanner
+type codeScanner struct {
+	common[*codeScanner]
 	code string
 }
 
 func Code(code string) Scanner {
-	c := new(CodeScanner)
-	c.Scanner = c
+	c := new(codeScanner)
+	c.scanner = c
 	lines := strings.Split(code, "\n")
 	input := make(chan string)
 	output := make(chan CodeToken)
@@ -143,14 +247,14 @@ func Code(code string) Scanner {
 	return c
 }
 
-func (c *CodeScanner) Scan() bool {
+func (c *codeScanner) Scan() bool {
 	if c.current >= len(c.tokens) {
 		lastTokenInfo := c.tokens[len(c.tokens)-1]
 		if lastTokenInfo.Token() == tokens.EOF {
 			c.current = len(c.tokens) - 1
 		}
 		lastPos := lastTokenInfo.ToPos()
-		c.tokens = append(c.tokens, TokenInfo{
+		c.tokens = append(c.tokens, tokenInfo{
 			rawValue: "",
 			token:    tokens.EOF,
 			from:     lastPos,
@@ -161,22 +265,22 @@ func (c *CodeScanner) Scan() bool {
 	return c.ended
 }
 
-/*func (c *CodeScanner) Clone() Scanner {
+/*func (c *codeScanner) Clone() Scanner {
 
-	cpy := new(CodeScanner)
+	cpy := new(codeScanner)
 	*cpy = *c
 	cpy.Scanner = cpy
 	return cpy
 }*/
 
-type FileScanner struct {
-	commonScanner
+type fileScanner struct {
+	common[*fileScanner]
 	file            *bufio.Scanner
 	tokenizerInput  chan<- string
 	tokenizerOutput <-chan CodeToken
 }
 
-func (f *FileScanner) Scan() bool {
+func (f *fileScanner) Scan() bool {
 	for !f.ended {
 		f.ended = f.file.Scan()
 		line := f.file.Text()
@@ -191,8 +295,8 @@ func (f *FileScanner) Scan() bool {
 }
 
 func File(file *os.File) Scanner {
-	f := &FileScanner{}
-	f.commonScanner.Scanner = f
+	f := &fileScanner{}
+	f.scanner = f
 	f.file = bufio.NewScanner(file)
 	input := make(chan string)
 	output := make(chan CodeToken)
@@ -223,7 +327,7 @@ type Tokenizer interface {
 }
 
 func innerTokenizing(inputLines <-chan string, output chan<- CodeToken) CodeToken {
-	pos := InteractiveTokenPos()
+	pos := InteractiveTokenPos().tokenPos()
 	tokenCode := CodeToken{}
 
 	tokenizer := Tokenizer(nil)
@@ -232,7 +336,7 @@ func innerTokenizing(inputLines <-chan string, output chan<- CodeToken) CodeToke
 		lines = append(lines, line)
 		for pos.line < len(lines) {
 			line := []rune(lines[pos.line] + "\n")
-			if pos.col >= len(line) {
+			if pos.tokenPos().col >= len(line) {
 				pos.line++
 				pos.col = 0
 				continue
@@ -250,14 +354,14 @@ func innerTokenizing(inputLines <-chan string, output chan<- CodeToken) CodeToke
 			}
 
 			nextScanner := tokenizer.Tokenize(r, pos)
-			tokenInfo := tokenizer.TokenInfo()
-			if tokenInfo.Token() == tokens.NoInit {
+			tokInf := tokenizer.TokenInfo().tokenInfo()
+			if tokInf.Token() == tokens.NoInit {
 				panic(fmt.Sprintf("Error for %T with first input: '%v'\n[CONTACT NU CORP]", tokenizer, string(r))) // TODO replace the [CONTACT NU CORP]
 			}
 			if nextScanner == nil {
-				tokenCode = append(tokenCode, tokenInfo)
+				tokenCode = append(tokenCode, tokInf)
 			}
-			pos = tokenInfo.to
+			pos = tokInf.to.tokenPos()
 			tokenizer = nextScanner
 		}
 		if tokenizer == nil {
@@ -285,7 +389,7 @@ func TokenizeCode(code string) CodeToken {
 	return tokens
 }
 
-func TokenizeInput(inputStream *bufio.Scanner) *CodeScanner {
+func TokenizeInput(inputStream *bufio.Scanner) *codeScanner {
 	/*input := make(chan string)
 	output := make(chan CodeToken)
 	scannerTokens := make(chan CodeToken)
@@ -306,12 +410,12 @@ func TokenizeInput(inputStream *bufio.Scanner) *CodeScanner {
 		close(input)
 	}(input, output, scannerTokens)
 	go innerTokenizing(input, output)
-	return &CodeScanner{tokenStream: scannerTokens}*/
+	return &codeScanner{tokenStream: scannerTokens}*/
 	return nil
 }
 
 type tokenizeEndOfInstruction struct {
-	token TokenInfo
+	token tokenInfo
 }
 
 func (s *tokenizeEndOfInstruction) TokenInfo() TokenInfo {
@@ -362,7 +466,7 @@ func (s ignoringScanner) Tokenize(_ rune, _ TokenPos) Tokenizer {
 	return nil
 }
 func (s ignoringScanner) TokenInfo() TokenInfo {
-	return TokenInfo{}
+	return tokenInfo{}
 }
 
 type errorScanner struct {

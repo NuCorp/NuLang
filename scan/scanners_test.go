@@ -1,11 +1,12 @@
 package scan
 
 import (
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"math/rand"
 	"testing"
 
-	"github.com/DarkMiMolle/GTL/array"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+
+	"github.com/LicorneSharing/GTL/slices"
 )
 
 func TestCodeLiterals(t *testing.T) {
@@ -225,11 +226,11 @@ func TestCode(t *testing.T) {
 }
 
 func MockScannerWith(toks ...tokens.Token) Scanner {
-	scanner := &CodeScanner{}
+	scanner := &codeScanner{}
 	var i = 0
-	scanner.commonScanner = commonScanner{
-		Scanner: scanner,
-		tokens: array.Map(toks, func(tok tokens.Token) TokenInfo {
+	scanner.common = common[*codeScanner]{
+		scanner: scanner,
+		tokens: slices.Map(toks, func(tok tokens.Token) TokenInfo {
 			var value any = tok.String()
 			if tok.IsLiteral() {
 				switch tok {
@@ -248,11 +249,11 @@ func MockScannerWith(toks ...tokens.Token) Scanner {
 			defer func() {
 				i += len(tok.String())
 			}()
-			return TokenInfo{
+			return tokenInfo{
 				rawValue: tok.String(),
 				token:    tok,
-				from:     TokenPos{col: i},
-				to:       TokenPos{col: i + len(tok.String()) - 1},
+				from:     tokenPos{col: i},
+				to:       tokenPos{col: i + len(tok.String()) - 1},
 				value:    value,
 				errorRef: 0,
 			}

@@ -1,10 +1,12 @@
 package ast
 
 import (
-	"github.com/DarkMiMolle/GTL/array"
-	"github.com/DarkMiMolle/GTL/optional"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"strings"
+
+	"github.com/LicorneSharing/GTL/optional"
+	"github.com/LicorneSharing/GTL/slices"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 )
 
 type Scope struct {
@@ -62,10 +64,10 @@ func (f *FuncDecl) CodePos() scan.TokenPos {
 }
 
 func (f *FuncDecl) String() string {
-	str := "func " + f.Name.String() + "(" + strings.Join(array.MapRef(f.Param, (*Parameter).String), ", ")
+	str := "func " + f.Name.String() + "(" + strings.Join(slices.MapRef(f.Param, (*Parameter).String), ", ")
 
 	if f.Variadic.HasValue() && len(f.Param) > 0 {
-		str += ", " + f.Variadic.Value().String()
+		str += ", " + f.Variadic.Get().String()
 	}
 
 	return str

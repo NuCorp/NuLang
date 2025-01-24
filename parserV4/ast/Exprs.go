@@ -2,9 +2,11 @@ package ast
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/GTL/array"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"strings"
+
+	"github.com/LicorneSharing/GTL/slices"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 )
 
 type LiteralExpr struct {
@@ -47,7 +49,7 @@ func (d *DotExpr) String() string {
 	if d.First == nil {
 		str = "."
 	}
-	return str + strings.Join(array.MapRef(d.Idents, (*Ident).String), ".")
+	return str + strings.Join(slices.MapRef(d.Idents, (*Ident).String), ".")
 }
 
 func (d *DotExpr) IsConstexpr() bool {

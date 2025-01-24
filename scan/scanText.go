@@ -1,12 +1,13 @@
 package scan
 
 import (
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"unicode"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 type tokenizeText struct {
-	token TokenInfo
+	token tokenInfo
 }
 
 func (s *tokenizeText) TokenInfo() TokenInfo { return s.token }

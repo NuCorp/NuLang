@@ -1,11 +1,11 @@
 module github.com/DarkMiMolle/NuProjects/Nu-beta-1
 
-go 1.22.2
+go 1.23
 
-toolchain go1.22.3
+toolchain go1.23.2
 
 require (
-	github.com/DarkMiMolle/GTL v0.0.12
+	github.com/LicorneSharing/GTL v0.0.2
 	github.com/stretchr/testify v1.9.0
 )
 
@@ -16,4 +16,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/DarkMiMolle/GTL v0.0.12 => ../GTL
+// replace github.com/LicorneSharing/GTL v0.0.12 => ../GTL

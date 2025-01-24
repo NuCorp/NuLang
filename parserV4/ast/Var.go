@@ -48,7 +48,7 @@ func (d DefaultedVar) CodePos() scan.TokenPos {
 
 type AssignedVar struct {
 	Name     *Ident
-	Type     TypeExpr
+	Type     Types
 	Assigned scan.TokenPos
 	Value    Expr
 }

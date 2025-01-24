@@ -2,12 +2,14 @@ package parserV3
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/GTL/array"
-	"github.com/DarkMiMolle/GTL/optional"
+	"strings"
+
+	"github.com/LicorneSharing/GTL/array"
+	"github.com/LicorneSharing/GTL/optional"
+
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV3/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
-	"strings"
 )
 
 type astElem[T ast.Ast] interface {

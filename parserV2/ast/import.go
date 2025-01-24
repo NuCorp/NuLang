@@ -1,7 +1,8 @@
 package ast
 
 import (
-	"github.com/DarkMiMolle/GTL/optional"
+	"github.com/LicorneSharing/GTL/optional"
+
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 )
 

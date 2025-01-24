@@ -37,7 +37,7 @@ func ParseVarDecl(s scan.Scanner, errors Errors) ast.VarList {
 			}
 		default:
 			errors.Set(s.CurrentPos(), fmt.Sprintf("invalid token: %v", s.CurrentToken()))
-			skipTo(s, tokens.COMMA, tokens.EoI()...)
+			skipTo(s, append(tokens.EoI(), tokens.COMMA)...)
 			if s.CurrentToken().IsEoI() {
 				return varList
 			}
@@ -82,11 +82,11 @@ func parseBindingAssign(s scan.Scanner, assignToken tokens.Token, errors Errors)
 			s.CurrentPos(),
 			fmt.Sprintf("unexpected token %v to open a binding element. Only accept { for name binding or [ for order binding", s.ConsumeTokenInfo()),
 		)
-		defer skipTo(s, assignToken, tokens.EoI()...)
+		defer skipTo(s, append(tokens.EoI(), assignToken)...)
 		mainBinding.Binding = &ast.InvalidBinding{Open: s.CurrentPos()}
 	}
 	if s.CurrentToken() != assignToken {
-		defer skipTo(s, 0, tokens.EoI()...)
+		defer skipTo(s, tokens.EoI()...)
 		errors.Set(s.CurrentPos(), "missing assignment for binding")
 		mainBinding.Value = nil
 		return mainBinding
@@ -122,7 +122,7 @@ func parseNameBinding(s scan.Scanner, errors Errors) ast.NameBinding {
 				fmt.Sprintf("unexpected token %v for binding element. Only accept ident, { (sub name binding) or [ (sub order binding)", s.ConsumeTokenInfo()),
 			)
 			current.Elem = ast.InvalidBindingElement{}
-			skipTo(s, tokens.IDENT, append(tokens.EoI(), tokens.OBRAC, tokens.OBRAK, tokens.COMMA)...)
+			skipTo(s, append(tokens.EoI(), tokens.IDENT, tokens.OBRAC, tokens.OBRAK, tokens.COMMA)...)
 			if s.CurrentToken() == tokens.COMMA {
 				s.ConsumeTokenInfo()
 			}
@@ -136,7 +136,7 @@ func parseNameBinding(s scan.Scanner, errors Errors) ast.NameBinding {
 				errors.Set(current.Colon, fmt.Sprintf("invalid expression after colon.")) // instead of: current.Colon put expr.Pos()
 
 				current.BoundTo = nil // TODO: ast.ErrorExpr{expr.Pos(), errors}
-				skipTo(s, tokens.COMMA, tokens.EoI()...)
+				skipTo(s, append(tokens.EoI(), tokens.COMMA)...)
 				if s.CurrentToken() != tokens.COMMA {
 					return binding
 				}

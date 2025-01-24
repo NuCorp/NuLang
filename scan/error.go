@@ -11,7 +11,7 @@ func (err Error) Error() string {
 	return fmt.Sprintf("[Tokenizer Error: wrong typo] at %v\n|", err.at)
 }
 
-func UnexpectedCharacter(token TokenInfo, got rune, expected ...rune) error {
+func UnexpectedCharacter(token tokenInfo, got rune, expected ...rune) error {
 	possibleFix := " "
 	if len(expected) == 1 {
 		possibleFix = string(expected[0])

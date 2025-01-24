@@ -1,12 +1,13 @@
 package scan
 
 import (
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"strings"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 type tokenizeOperatorAndPunctuation struct {
-	token TokenInfo
+	token tokenInfo
 	init  bool
 }
 
