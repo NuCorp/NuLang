@@ -1,6 +1,9 @@
 package parser
 
 import (
+	"fmt"
+	"reflect"
+
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
@@ -83,4 +86,17 @@ func initMapIfNeeded[K comparable, V any, M ~map[K]V](m *M) {
 	if *m == nil {
 		*m = make(M)
 	}
+}
+
+func convertor[T1, T2 any](v T1) T2 {
+	var (
+		val = reflect.ValueOf(v)
+		t2  = reflect.TypeFor[T2]()
+	)
+
+	if !val.Type().ConvertibleTo(t2) {
+		panic(fmt.Sprintf("wrong call to convertor: %v must be convertible to %v", val.Type(), t2))
+	}
+
+	return val.Convert(t2).Interface().(T2)
 }
