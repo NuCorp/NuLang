@@ -9,12 +9,6 @@ import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
 )
 
-type Var struct {
-	Name  string
-	Type  Type
-	Value Expr
-}
-
 type BindingAssign struct {
 	NameBinding  optional.Value[NameBindingAssign]
 	OrderBinding optional.Value[OrderBindingAssign]

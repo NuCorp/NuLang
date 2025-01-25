@@ -1,6 +1,9 @@
 package parser
 
-import "github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser/ast"
+import (
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+)
 
 type defs struct {
 	toplevel bool
@@ -12,4 +15,8 @@ type defs struct {
 	// consts ParserOf[[]ast.Const]
 	// funcs ParserOf[ast.FuncDef]
 	definedVars ParserOf[[]ast.Var]
+}
+
+func (d defs) Parse(s scan.Scanner, errors *Errors) []ast.Def {
+	return nil
 }
