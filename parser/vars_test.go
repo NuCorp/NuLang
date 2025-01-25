@@ -6,6 +6,7 @@ import (
 
 	tassert "github.com/stretchr/testify/assert"
 
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 )
@@ -209,7 +210,7 @@ func Test_nameBindingAssigned_Parse(t *testing.T) {
 						},
 					},
 				},
-				ToName: map[int]*ast.DotIdent{
+				ToName: map[int]ast.DotIdent{
 					1: {"", "c"},
 				},
 			},
@@ -231,19 +232,19 @@ func Test_nameBindingAssigned_Parse(t *testing.T) {
 					},
 					ast.DotIdent{"d"},
 				},
-				ToName: map[int]*ast.DotIdent{
+				ToName: map[int]ast.DotIdent{
 					0: {"", "a"},
 					1: {"", "c"},
 					2: {"", "d"},
 				},
-				AskOrValues: map[*ast.DotIdent]ast.AskOrOperator{
-					&ast.DotIdent{"", "d"}: {Left: &ast.DotIdent{"", "d"}, Right: ast.IntExpr(42)},
+				AskedOr: map[int]ast.Expr{
+					2: ast.IntExpr(42),
 				},
-				AskValues: map[*ast.DotIdent]ast.AskOperator{
-					&ast.DotIdent{"", "c"}: {Left: &ast.DotIdent{"", "c"}},
+				Asked: container.Set[int]{
+					1: {},
 				},
-				ForceValues: map[*ast.DotIdent]ast.ForceOperator{
-					&ast.DotIdent{"", "a"}: {Left: &ast.DotIdent{"", "a"}},
+				Forced: container.Set[int]{
+					0: {},
 				},
 			},
 			wantErrors: Errors{},
@@ -267,7 +268,96 @@ func Test_nameBindingAssigned_Parse(t *testing.T) {
 
 			got := parser.Parse(scanner, &errors)
 
-			FinalValuesEqual(t, tt.wantNameBinding, got)
+			tassert.Equal(t, tt.wantNameBinding, got)
+			tassert.Equal(t, tt.wantErrors, errors)
+		})
+	}
+}
+
+func Test_orderBindingAssigned_Parse(t *testing.T) {
+	testcases := []struct {
+		name string
+		code string
+
+		subbindingNameParser ParserOf[ast.NameBindingAssign]
+		exprParser           parserFuncFor[ast.Expr]
+
+		wantOrderBinding ast.OrderBindingAssign
+		wantErrors       Errors
+	}{
+		{
+			name: "no sub-binding",
+			code: "[a, b]",
+			wantOrderBinding: ast.OrderBindingAssign{
+				Elems: []ast.SubBinding{
+					ast.DotIdent{"a"},
+					ast.DotIdent{"b"},
+				},
+			},
+		},
+		{
+			name: "order sub-binding",
+			code: "[a, *[b]]",
+			wantOrderBinding: ast.OrderBindingAssign{
+				Elems: []ast.SubBinding{
+					ast.DotIdent{"a"},
+					ast.OrderBindingAssign{
+						Elems: []ast.SubBinding{
+							ast.DotIdent{"b"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "with force ask and askor",
+			code: "[a!, *[b]?, d ?? 42]",
+			exprParser: func(scanner scan.Scanner, errors *Errors) ast.Expr {
+				scanner.ConsumeTokenInfo()
+				return ast.IntExpr(42)
+			},
+			wantOrderBinding: ast.OrderBindingAssign{
+				Elems: []ast.SubBinding{
+					ast.DotIdent{"a"},
+					ast.OrderBindingAssign{
+						Elems: []ast.SubBinding{
+							ast.DotIdent{"b"},
+						},
+					},
+					ast.DotIdent{"d"},
+				},
+				AskedOr: map[int]ast.Expr{
+					2: ast.IntExpr(42),
+				},
+				Asked: container.Set[int]{
+					1: {},
+				},
+				Forced: container.Set[int]{
+					0: {},
+				},
+			},
+			wantErrors: Errors{},
+		},
+	}
+
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			var (
+				parser = &orderBindingAssigned{
+					expr: tt.exprParser,
+				}
+				scanner = scan.Code(tt.code)
+				errors  = Errors{}
+			)
+
+			parser.subbinding = subbindingParser{
+				namebindingAssign:  tt.subbindingNameParser,
+				orderbindingAssign: parser,
+			}
+
+			got := parser.Parse(scanner, &errors)
+
+			tassert.Equal(t, tt.wantOrderBinding, got)
 			tassert.Equal(t, tt.wantErrors, errors)
 		})
 	}

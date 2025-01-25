@@ -271,28 +271,24 @@ func (n nameBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.NameBindi
 				}
 			}
 
-			bindName := &ast.DotIdent{"", s.ConsumeTokenInfo().RawString()}
+			current := len(binding.Elems) - 1
 
 			initMapIfNeeded(&binding.ToName)
-
-			binding.ToName[len(binding.Elems)-1] = bindName
+			binding.ToName[current] = ast.DotIdent{"", s.ConsumeTokenInfo().RawString()}
 
 			switch s.CurrentToken() {
 			case tokens.NOT:
 				s.ConsumeTokenInfo()
-				initMapIfNeeded(&binding.ForceValues)
-				binding.ForceValues[bindName] = ast.ForceOperator{Left: bindName}
+				initMapIfNeeded(&binding.Forced)
+				binding.Forced.Insert(current)
 			case tokens.ASK:
 				s.ConsumeTokenInfo()
-				initMapIfNeeded(&binding.AskValues)
-				binding.AskValues[bindName] = ast.AskOperator{Left: bindName}
+				initMapIfNeeded(&binding.Asked)
+				binding.Asked.Insert(current)
 			case tokens.ASKOR:
 				s.ConsumeTokenInfo()
-				initMapIfNeeded(&binding.AskOrValues)
-				binding.AskOrValues[bindName] = ast.AskOrOperator{
-					Left:  bindName,
-					Right: n.expr.Parse(s, errors),
-				}
+				initMapIfNeeded(&binding.AskedOr)
+				binding.AskedOr[current] = n.expr.Parse(s, errors)
 			}
 
 			if s.CurrentToken() == tokens.COMMA {
@@ -360,6 +356,9 @@ func (o orderBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.OrderBin
 			initMapIfNeeded(&binding.AskedOr)
 			s.ConsumeTokenInfo()
 			binding.AskedOr[current] = o.expr.Parse(s, errors)
+		}
+
+		switch s.CurrentToken() {
 		case tokens.COMMA:
 			s.ConsumeTokenInfo()
 			ignore(s, tokens.NL)

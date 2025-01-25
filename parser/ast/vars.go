@@ -26,20 +26,11 @@ func (b BindingAssign) ToVars() ([]Var, error) {
 }
 
 type NameBindingAssign struct {
-	Elems       []SubBinding
-	ToName      map[int]*DotIdent
-	AskOrValues map[*DotIdent]AskOrOperator
-	AskValues   map[*DotIdent]AskOperator
-	ForceValues map[*DotIdent]ForceOperator
-}
-
-func EmptyNameBindingAssign() NameBindingAssign {
-	return NameBindingAssign{
-		ToName:      make(map[int]*DotIdent),
-		AskOrValues: make(map[*DotIdent]AskOrOperator),
-		AskValues:   make(map[*DotIdent]AskOperator),
-		ForceValues: make(map[*DotIdent]ForceOperator),
-	}
+	Elems   []SubBinding
+	ToName  map[int]DotIdent
+	AskedOr map[int]Expr
+	Asked   container.Set[int]
+	Forced  container.Set[int]
 }
 
 func (n NameBindingAssign) subbinding() {}
