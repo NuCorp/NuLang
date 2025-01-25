@@ -45,10 +45,4 @@ type ExtensionDef struct {
 
 func (ExtensionDef) DefID() string { return "def:extension" }
 
-type FuncDef struct {
-	Name      string
-	Prototype FuncType
-	Body      any
-}
-
 func (FuncDef) DefID() string { return "def:func" }
