@@ -42,6 +42,8 @@ func (d defs) Parse(s scan.Scanner, errors *Errors) []ast.Def {
 				// error ?
 			}
 		}
+
+		ignoreEoI(s)
 	}
 
 	return defs

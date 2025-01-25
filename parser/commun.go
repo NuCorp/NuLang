@@ -64,6 +64,10 @@ func ignore(s scan.Scanner, t ...tokens.Token) {
 	}
 }
 
+func ignoreEoI(s scan.Scanner, t ...tokens.Token) {
+	ignore(s, append(tokens.EoI(), t...)...)
+}
+
 func ignoreOnce(s scan.Scanner, t tokens.Token) {
 	if s.CurrentToken() == t {
 		s.ConsumeTokenInfo()
