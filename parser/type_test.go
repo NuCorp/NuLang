@@ -1,4 +1,4 @@
-package parserV5
+package parser
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	tassert "github.com/stretchr/testify/assert"
 
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV5/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )

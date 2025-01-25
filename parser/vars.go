@@ -1,9 +1,10 @@
-package parserV5
+package parser
 
 import (
 	"fmt"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV5/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
@@ -192,16 +193,31 @@ func (n nameBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.NameBindi
 	assert(s.ConsumeToken() == tokens.OBRAC)
 
 	/*
-		- {a}
-		- {a: .b}
-		- {*{a}: .b} => *{a} = subbinding
-		- {*[a]: .b} => *[a] = subbinding
-		- {a: .b?}
-		- {a: .b!}
-		- {a: .b ?? Expr}
+			- {a}
+			- {a: .b}
+			- {*{a}: .b} => *{a} = subbinding
+			- {*[a]: .b} => *[a] = subbinding
+			- {a: .b?}
+			- {a: .b!}
+			- {a: .b ?? Expr}
+
+		for v2:
+			- {a!}
+			- {a?}
+			- {a ?? Expr}
 	*/
 
 	var binding ast.NameBindingAssign
+
+	defer func() {
+		names := make(container.Set[string])
+
+		for _, name := range binding.ElemsName() {
+			if !names.Insert(name) {
+				errors.Set(s.CurrentPos(), "that binding has multiple use of the same element: "+name)
+			}
+		}
+	}()
 
 	for {
 		var needNaming bool
@@ -263,12 +279,15 @@ func (n nameBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.NameBindi
 
 			switch s.CurrentToken() {
 			case tokens.NOT:
+				s.ConsumeTokenInfo()
 				initMapIfNeeded(&binding.ForceValues)
 				binding.ForceValues[bindName] = ast.ForceOperator{Left: bindName}
 			case tokens.ASK:
+				s.ConsumeTokenInfo()
 				initMapIfNeeded(&binding.AskValues)
 				binding.AskValues[bindName] = ast.AskOperator{Left: bindName}
 			case tokens.ASKOR:
+				s.ConsumeTokenInfo()
 				initMapIfNeeded(&binding.AskOrValues)
 				binding.AskOrValues[bindName] = ast.AskOrOperator{
 					Left:  bindName,
@@ -287,6 +306,89 @@ func (n nameBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.NameBindi
 
 				return binding
 			}
+		}
+	}
+}
+
+type orderBindingAssigned struct {
+	subbinding ParserOf[ast.SubBinding]
+	expr       ParserOf[ast.Expr]
+}
+
+func (o orderBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.OrderBindingAssign {
+	assert(s.ConsumeToken() == tokens.OBRAK)
+
+	/*
+		- [a]
+		- [*{a}] => *{a} = subbinding
+		- [*[a]] => *[a] = subbinding
+		- [a?]              |
+		- [a!]              | > also works with: [*{a}!] etc...
+		- [a ?? Expr]       |
+		- [_] => no ident
+	*/
+
+	var binding ast.OrderBindingAssign
+
+	for {
+		switch s.CurrentToken() {
+		case tokens.STAR:
+			binding.Elems = append(binding.Elems, o.subbinding.Parse(s, errors))
+		case tokens.IDENT:
+			binding.Elems = append(binding.Elems, ast.DotIdent{s.ConsumeTokenInfo().RawString()})
+		default:
+			errors.Set(s.CurrentPos(), "expected '*' (sub-binding) or an identifier inside order binding assignment")
+			skipToEOI(s, tokens.COMMA, tokens.CBRAC)
+
+			if s.CurrentToken().IsEoI() {
+				return binding
+			}
+		}
+
+		current := len(binding.Elems) - 1
+
+		switch s.CurrentToken() {
+		case tokens.NOT:
+			initMapIfNeeded(&binding.Forced)
+			s.ConsumeTokenInfo()
+			binding.Forced.Insert(current)
+		case tokens.ASK:
+			initMapIfNeeded(&binding.Asked)
+			s.ConsumeTokenInfo()
+			binding.Asked.Insert(current)
+		case tokens.ASKOR:
+			initMapIfNeeded(&binding.AskedOr)
+			s.ConsumeTokenInfo()
+			binding.AskedOr[current] = o.expr.Parse(s, errors)
+		case tokens.COMMA:
+			s.ConsumeTokenInfo()
+			ignore(s, tokens.NL)
+			continue
+		case tokens.CBRAK:
+			s.ConsumeTokenInfo()
+			return binding
+		default:
+			errors.Set(
+				s.CurrentPos(),
+				fmt.Sprintf(
+					"unexpected `%v` after a binding element (expect `!`, `?` `?? EXPR`, `,` or `]`",
+					s.CurrentToken(),
+				),
+			)
+
+			skipToEOI(s, tokens.CBRAK, tokens.COMMA)
+
+			if s.CurrentToken().IsEoI() {
+				return binding
+			}
+
+			if s.CurrentToken() == tokens.CBRAK {
+				s.ConsumeTokenInfo()
+				return binding
+			}
+
+			s.ConsumeTokenInfo()
+			continue
 		}
 	}
 }

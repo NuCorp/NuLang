@@ -1,11 +1,11 @@
-package parserV4
+package parser_old
 
 import (
 	"fmt"
 	"slices"
 
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV4/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser_old/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils/maps"

@@ -1,13 +1,56 @@
-package parserV5
+package parser
 
 import (
+	"reflect"
 	"testing"
 
 	tassert "github.com/stretchr/testify/assert"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV5/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 )
+
+// FinalValuesEqual will compare expected vs got but will only compare final value dereferenced of each field of
+// structure (if it's a structure). It will apply an assert.Equal otherwise.
+func FinalValuesEqual(t *testing.T, expected, got any) bool {
+	var (
+		expectedVal = reflect.ValueOf(expected)
+		gotVal      = reflect.ValueOf(expected)
+	)
+
+	for expectedVal.Kind() == reflect.Ptr || expectedVal.Kind() == reflect.Interface {
+		expectedVal = expectedVal.Elem()
+	}
+
+	for gotVal.Kind() == reflect.Ptr || gotVal.Kind() == reflect.Interface {
+		expectedVal = expectedVal.Elem()
+	}
+
+	if !tassert.Equalf(t, expectedVal.Type(), gotVal.Type(), "expected type %T but got type %T", expected, got) {
+		return false
+	}
+
+	switch expectedVal.Kind() {
+	case reflect.Struct:
+		ret := true
+		for i := 0; i < expectedVal.NumField(); i++ {
+			ret = ret && finalValuesEqualField(t, expectedVal.Type().Field(i).Name, expectedVal.Field(i), gotVal.Field(i))
+		}
+
+		return ret
+	default:
+		return tassert.Equal(t, expectedVal.Interface(), gotVal.Interface())
+	}
+}
+
+func finalValuesEqualField(t *testing.T, field string, expected, got reflect.Value) bool {
+	if !FinalValuesEqual(t, expected.Interface(), got.Interface()) {
+		t.Errorf("> from field %s", field)
+		return false
+	}
+
+	return true
+}
 
 func Test_groupedVar_Parse(t *testing.T) {
 	testcases := []struct {
@@ -171,6 +214,40 @@ func Test_nameBindingAssigned_Parse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with force ask and askor",
+			code: "{a: .a!, *{b}: .c?, d: .d ?? 42}",
+			exprParser: func(scanner scan.Scanner, errors *Errors) ast.Expr {
+				scanner.ConsumeTokenInfo()
+				return ast.IntExpr(42)
+			},
+			wantNameBinding: ast.NameBindingAssign{
+				Elems: []ast.SubBinding{
+					ast.DotIdent{"a"},
+					ast.NameBindingAssign{
+						Elems: []ast.SubBinding{
+							ast.DotIdent{"b"},
+						},
+					},
+					ast.DotIdent{"d"},
+				},
+				ToName: map[int]*ast.DotIdent{
+					0: {"", "a"},
+					1: {"", "c"},
+					2: {"", "d"},
+				},
+				AskOrValues: map[*ast.DotIdent]ast.AskOrOperator{
+					&ast.DotIdent{"", "d"}: {Left: &ast.DotIdent{"", "d"}, Right: ast.IntExpr(42)},
+				},
+				AskValues: map[*ast.DotIdent]ast.AskOperator{
+					&ast.DotIdent{"", "c"}: {Left: &ast.DotIdent{"", "c"}},
+				},
+				ForceValues: map[*ast.DotIdent]ast.ForceOperator{
+					&ast.DotIdent{"", "a"}: {Left: &ast.DotIdent{"", "a"}},
+				},
+			},
+			wantErrors: Errors{},
+		},
 	}
 
 	for _, tt := range testcases {
@@ -190,7 +267,7 @@ func Test_nameBindingAssigned_Parse(t *testing.T) {
 
 			got := parser.Parse(scanner, &errors)
 
-			tassert.Equal(t, tt.wantNameBinding, got)
+			FinalValuesEqual(t, tt.wantNameBinding, got)
 			tassert.Equal(t, tt.wantErrors, errors)
 		})
 	}

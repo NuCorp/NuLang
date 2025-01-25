@@ -1,11 +1,11 @@
-package parserV4
+package parser_old
 
 import (
 	"fmt"
 
 	"github.com/LicorneSharing/GTL/optional"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV4/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser_old/ast"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )

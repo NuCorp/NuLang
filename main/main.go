@@ -3,14 +3,16 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV4"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"os"
 	"strings"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/ast"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/config"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser_old"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 )
 
 func executor(elem ast.Ast) int64 {
@@ -41,7 +43,7 @@ func executor(elem ast.Ast) int64 {
 func main() {
 
 	s := scan.Code(`var *{a, {b}: , c} = `)
-	v := parserV4.ParseVarDecl(s, parserV4.NewErrorsMap())
+	v := parser_old.ParseVarDecl(s, parser_old.NewErrorsMap())
 	fmt.Printf("%+v\n", v)
 	return
 	//Input()

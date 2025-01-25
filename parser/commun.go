@@ -1,4 +1,4 @@
-package parserV5
+package parser
 
 import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
@@ -75,8 +75,8 @@ func nullIsZero[T any](t *T) T {
 	return *t
 }
 
-func initMapIfNeeded[K comparable, V any](m *map[K]V) {
+func initMapIfNeeded[K comparable, V any, M ~map[K]V](m *M) {
 	if *m == nil {
-		*m = make(map[K]V)
+		*m = make(M)
 	}
 }

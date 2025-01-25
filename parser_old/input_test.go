@@ -1,8 +1,9 @@
-package parserV4
+package parser_old
 
 import (
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parserV4/ast"
 	"testing"
+
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser_old/ast"
 
 	tassert "github.com/stretchr/testify/assert"
 )
