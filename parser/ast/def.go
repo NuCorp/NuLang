@@ -1,5 +1,7 @@
 package ast
 
+import "github.com/LicorneSharing/GTL/optional"
+
 type Def interface {
 	DefID() string
 }
@@ -44,5 +46,20 @@ type ExtensionDef struct {
 }
 
 func (ExtensionDef) DefID() string { return "def:extension" }
+
+type CastKind int
+
+const (
+	Explicit = CastKind(iota)
+	Implicit
+	Delete
+)
+
+// type int as string = explicit: from {
+type CastDef struct {
+	From, To Type // Warning, can't be typeof(.)
+	Kind     CastKind
+	Body     optional.Value[any]
+}
 
 func (FuncDef) DefID() string { return "def:func" }
