@@ -30,6 +30,10 @@ func (p parserFuncFor[T]) Parse(scanner scan.Scanner, errors *Errors) T {
 	return p(scanner, errors)
 }
 
+type conditionalParser interface {
+	condition(s scan.Scanner) bool
+}
+
 func requires(s scan.Scanner, t1 tokens.Token, or ...tokens.Token) {
 	assert(s.CurrentToken().IsOneOf(append(or, t1)...))
 }

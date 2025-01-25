@@ -1,8 +1,14 @@
 package ast
 
+import "github.com/LicorneSharing/GTL/optional"
+
 type Package struct {
-	Name string
+	Name DotIdent
 	Defs []Def
 }
 
-type Imports struct{}
+type Import struct {
+	Access  optional.Value[string]
+	Package DotIdent
+	As      optional.Value[string]
+}
