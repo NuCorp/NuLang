@@ -9,7 +9,7 @@ import (
 type expr struct {
 	literal ParserOf[ast.LiteralExpr]
 	ident   ParserOf[ast.DotIdent]
-	// tuple ParserOf[ast.TupleExpr]
+	tuple   ParserOf[ast.TupleExpr]
 	// arr ParserOf[ast.ArrayExpr]
 	// func
 	// struct
@@ -38,4 +38,52 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 	}
 
 	return expr
+}
+
+type tupleExpr struct {
+	expr ParserOf[ast.Expr]
+}
+
+func (t tupleExpr) Parse(s scan.Scanner, errors *Errors) ast.TupleExpr {
+	assert(s.ConsumeToken() == tokens.OPAREN)
+
+	var tuple ast.TupleExpr
+
+	if s.CurrentToken() == tokens.CPAREN {
+		errors.Set(s.CurrentPos(), "can't have empty tuple")
+		return tuple
+	}
+
+	for !s.IsEnded() {
+		ignore(s, tokens.NL)
+
+		expr := t.expr.Parse(s, errors)
+
+		if t, ok := expr.(ast.TupleExpr); ok {
+			tuple = append(tuple, t...)
+		} else {
+			tuple = append(tuple, expr)
+		}
+	afterExpr:
+		if s.CurrentToken() == tokens.COMMA {
+			s.ConsumeTokenInfo()
+			continue
+		}
+
+		ignore(s, tokens.NL)
+
+		if s.CurrentToken() == tokens.CPAREN {
+			return tuple
+		}
+
+		errors.Set(s.CurrentPos(), "expected `,` or `)` to continue/stop the tuple but got "+s.CurrentToken().String())
+		skipToEOI(s, tokens.COMMA, tokens.CPAREN)
+		if s.CurrentToken().IsEoI() {
+			return tuple
+		}
+
+		goto afterExpr
+	}
+
+	return tuple
 }
