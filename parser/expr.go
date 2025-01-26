@@ -10,6 +10,7 @@ type expr struct {
 	literal ParserOf[ast.LiteralExpr]
 	ident   ParserOf[ast.DotIdent]
 	tuple   ParserOf[ast.TupleExpr]
+	typing  ParserOf[ast.Type]
 	// arr ParserOf[ast.ArrayExpr]
 	// func
 	// struct
@@ -34,6 +35,14 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 		case s.CurrentToken() == tokens.IDENT:
 			// look up to determine if it is named expr, init expr, interface expr or func binding expr
 
+		}
+	}
+
+	switch {
+	case s.CurrentToken() == tokens.AS:
+		expr = ast.AsTypeExpr{
+			From:   expr,
+			AsType: e.typing.Parse(s, errors),
 		}
 	}
 
