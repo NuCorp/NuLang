@@ -18,3 +18,10 @@ type AsTypeExpr struct {
 }
 
 func (AsTypeExpr) ExprID() string { return "expr:as" }
+
+type IsTypeExpr struct {
+	From   Expr
+	IsType Type
+}
+
+func (IsTypeExpr) ExprID() string { return "expr:is" }
