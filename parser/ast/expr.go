@@ -11,3 +11,10 @@ func (d DotIdent) ExprID() string {
 type TupleExpr []Expr
 
 func (t TupleExpr) ExprID() string { return "expr:tuple" }
+
+type AsTypeExpr struct {
+	From   Expr
+	AsType Type
+}
+
+func (AsTypeExpr) ExprID() string { return "expr:as" }
