@@ -121,10 +121,10 @@ func (c *common[T]) Clone() Scanner {
 	scanner := reflect.ValueOf(c.scanner)
 	cpy := reflect.New(scanner.Type().Elem())
 	cpy.Elem().Set(scanner.Elem())
-	if !cpy.Elem().FieldByName("commonScanner").IsValid() {
+	if !cpy.Elem().FieldByName("common").IsValid() {
 		return cpy.Interface().(Scanner)
 	}
-	cpy.Elem().FieldByName("commonScanner").FieldByName("Scanner").Set(cpy)
+	cpy.Elem().FieldByName("common").FieldByName("Scanner").Set(cpy)
 	return cpy.Interface().(Scanner)
 }
 
