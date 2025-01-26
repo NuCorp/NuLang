@@ -42,35 +42,36 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 	case s.CurrentToken() == tokens.AS:
 		s.ConsumeTokenInfo()
 
-		var (
-			forced = s.CurrentToken() == tokens.NOT
-			aksed  = s.ConsumeToken() == tokens.ASK
-		)
+		as := ast.AsTypeExpr{
+			Forced: s.CurrentToken() == tokens.NOT,
+			Asked:  s.ConsumeToken() == tokens.ASK,
+			From:   expr,
+		}
 
-		if forced || aksed {
+		if as.Forced || as.Asked {
 			s.ConsumeTokenInfo()
 		}
 
-		expr = ast.AsTypeExpr{
-			Forced: forced,
-			Asked:  aksed,
-			From:   expr,
-			AsType: e.typing.Parse(s, errors),
-		}
+		as.AsType = e.typing.Parse(s, errors)
+
+		expr = as
+
 	case s.CurrentToken() == tokens.IS:
 		s.ConsumeTokenInfo()
 
-		constexpr := s.CurrentToken() == tokens.PLUS
+		is := ast.IsTypeExpr{
+			Constexpr: s.CurrentToken() == tokens.PLUS,
+			From:      expr,
+		}
 
-		if constexpr {
+		if is.Constexpr {
 			s.ConsumeTokenInfo()
 		}
 
-		expr = ast.IsTypeExpr{
-			Constexpr: constexpr,
-			From:      expr,
-			IsType:    e.typing.Parse(s, errors),
-		}
+		is.IsType = e.typing.Parse(s, errors)
+
+		expr = is
+
 	}
 
 	return expr
