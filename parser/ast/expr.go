@@ -33,3 +33,5 @@ type AddressOf struct {
 	RealAddress bool
 	Expr        Expr
 }
+
+func (AddressOf) ExprID() string { return "expr:&.:&(.)" }
