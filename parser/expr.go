@@ -44,6 +44,11 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 			From:   expr,
 			AsType: e.typing.Parse(s, errors),
 		}
+	case s.CurrentToken() == tokens.IS:
+		expr = ast.IsTypeExpr{
+			From:   expr,
+			IsType: e.typing.Parse(s, errors),
+		}
 	}
 
 	return expr
