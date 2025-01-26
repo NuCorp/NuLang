@@ -40,14 +40,36 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 
 	switch {
 	case s.CurrentToken() == tokens.AS:
+		s.ConsumeTokenInfo()
+
+		var (
+			forced = s.CurrentToken() == tokens.NOT
+			aksed  = s.ConsumeToken() == tokens.ASK
+		)
+
+		if forced || aksed {
+			s.ConsumeTokenInfo()
+		}
+
 		expr = ast.AsTypeExpr{
+			Forced: forced,
+			Asked:  aksed,
 			From:   expr,
 			AsType: e.typing.Parse(s, errors),
 		}
 	case s.CurrentToken() == tokens.IS:
+		s.ConsumeTokenInfo()
+
+		constexpr := s.CurrentToken() == tokens.PLUS
+
+		if constexpr {
+			s.ConsumeTokenInfo()
+		}
+
 		expr = ast.IsTypeExpr{
-			From:   expr,
-			IsType: e.typing.Parse(s, errors),
+			Constexpr: constexpr,
+			From:      expr,
+			IsType:    e.typing.Parse(s, errors),
 		}
 	}
 

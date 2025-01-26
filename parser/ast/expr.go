@@ -13,6 +13,8 @@ type TupleExpr []Expr
 func (t TupleExpr) ExprID() string { return "expr:tuple" }
 
 type AsTypeExpr struct {
+	Forced bool
+	Asked  bool
 	From   Expr
 	AsType Type
 }
@@ -20,8 +22,9 @@ type AsTypeExpr struct {
 func (AsTypeExpr) ExprID() string { return "expr:as" }
 
 type IsTypeExpr struct {
-	From   Expr
-	IsType Type
+	Constexpr bool
+	From      Expr
+	IsType    Type
 }
 
 func (IsTypeExpr) ExprID() string { return "expr:is" }
