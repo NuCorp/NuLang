@@ -28,3 +28,8 @@ type IsTypeExpr struct {
 }
 
 func (IsTypeExpr) ExprID() string { return "expr:is" }
+
+type AddressOf struct {
+	RealAddress bool
+	Expr        Expr
+}

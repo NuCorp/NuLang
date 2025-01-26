@@ -16,8 +16,6 @@ type expr struct {
 	// struct
 	// interface
 	// initExpr
-	// as
-	// is
 	// TypeExpr: Type[] or Type{Of:.} or Type{Of+:.}
 	// if
 	// for
@@ -30,6 +28,17 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 
 	for !s.IsEnded() {
 		switch {
+		case s.CurrentToken() == tokens.REF:
+			s.ConsumeTokenInfo()
+
+			var ref ast.AddressOf
+
+			ref.RealAddress = s.CurrentToken() == tokens.OPAREN
+
+			if ref.RealAddress {
+				s.ConsumeTokenInfo()
+			}
+
 		case s.CurrentToken().IsLiteral():
 			expr = e.literal.Parse(s, errors)
 		case s.CurrentToken() == tokens.IDENT:
