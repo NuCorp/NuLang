@@ -11,20 +11,21 @@ type expr struct {
 	ident   ParserOf[ast.DotIdent]
 	tuple   ParserOf[ast.TupleExpr]
 	typing  ParserOf[ast.Type]
+
 	// arr ParserOf[ast.ArrayExpr]
-	// func
-	// struct
-	// interface
+	// funcExpr ParserOf[ast.FuncExpr]
+	// structExpr ParserOf[ast.StructExpr]
+	// interfaceExpr ParserOf[ast.InterfaceExpr]
+	// TypeExpr ParserOf[ast.TypeExpr] // Type[.] or Type{Of:.} or Type{Of+:.}
+	// ifExpr ParserOf[ast.IfExpr]
+	// forExpr ParserOf[ast.ForExpr]
+	// tryExpr ParserOf[ast.TryExpr]
+
 	initExpr     Continuer[ast.DotIdent, ast.InitExpr]
 	functionCall Continuer[ast.DotIdent, ast.FuncCall]
-	// TypeExpr: Type[] or Type{Of:.} or Type{Of+:.}
-	// if
-	// for
-	// ref
-	// try
-	asExpr    Continuer[ast.Expr, ast.AsTypeExpr]
-	isExpr    Continuer[ast.Expr, ast.IsTypeExpr]
-	binopExpr Continuer[ast.Expr, ast.BinopExpr] // may be nil
+	asExpr       Continuer[ast.Expr, ast.AsTypeExpr]
+	isExpr       Continuer[ast.Expr, ast.IsTypeExpr]
+	binopExpr    Continuer[ast.Expr, ast.BinopExpr] // may be nil
 }
 
 func toParserOfExpr[F ast.Expr](p ParserOf[F]) ParserOf[ast.Expr] {
@@ -33,8 +34,11 @@ func toParserOfExpr[F ast.Expr](p ParserOf[F]) ParserOf[ast.Expr] {
 	})
 }
 
-func (e expr) lookupIdent(ident ast.DotIdent, s scan.Scanner) ParserOf[ast.Expr] {
-	scanner := s.Clone()
+func (e expr) lookupIdent(s scan.Scanner, errors *Errors) ParserOf[ast.Expr] {
+	var (
+		ident   = e.ident.Parse(s, errors)
+		scanner = s.Clone()
+	)
 
 	switch scanner.CurrentToken() {
 	case tokens.OBRAC, tokens.COLON:
@@ -43,7 +47,9 @@ func (e expr) lookupIdent(ident ast.DotIdent, s scan.Scanner) ParserOf[ast.Expr]
 		return toParserOfExpr(continuerToParser(ident, e.functionCall))
 	}
 
-	return nil
+	return parserFuncFor[ast.Expr](func(_ scan.Scanner, _ *Errors) ast.Expr {
+		return ident
+	})
 }
 
 func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
@@ -77,14 +83,8 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 		case s.CurrentToken().IsLiteral():
 			expr = e.literal.Parse(s, errors)
 		case s.CurrentToken() == tokens.IDENT:
-			expr = e.ident.Parse(s, errors)
-
 			// look up to determine if it is named expr, init expr, interface expr or func binding expr
-			next := e.lookupIdent(expr.(ast.DotIdent), s)
-
-			if next != nil {
-				expr = next.Parse(s, errors)
-			}
+			expr = e.lookupIdent(s, errors).Parse(s, errors)
 		}
 	}
 
