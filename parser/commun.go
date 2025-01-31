@@ -33,6 +33,16 @@ func (p parserFuncFor[T]) Parse(scanner scan.Scanner, errors *Errors) T {
 	return p(scanner, errors)
 }
 
+type Continuer[F, T any] interface {
+	ContinueParsing(from F, scanner scan.Scanner, errors *Errors) T
+}
+
+func continuerToParser[F, T any](from F, continuer Continuer[F, T]) ParserOf[T] {
+	return parserFuncFor[T](func(scanner scan.Scanner, errors *Errors) T {
+		return continuer.ContinueParsing(from, scanner, errors)
+	})
+}
+
 type conditionalParser interface {
 	condition(s scan.Scanner) bool
 }

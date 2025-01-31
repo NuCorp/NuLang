@@ -29,9 +29,15 @@ func (FuncExpr) FuncID() string { return "func:func" }
 
 func (DotIdent) FuncID() string { return "func:named" }
 
-type FuncCall struct {
-	From        CallableFunc
-	OrderedArgs []Expr
-	NamedArgs   map[string]Expr
-	// boundArgs
+type ArgBinding struct {
+	Ordered []Expr
+	Named   map[string]Expr
+	// destructured ?
 }
+
+type FuncCall struct {
+	From CallableFunc
+	Args ArgBinding
+}
+
+func (FuncCall) ExprID() string { return "expr:call" }

@@ -91,6 +91,11 @@ func organizeBinaryOperator(root *ast.BinopExpr) *ast.BinopExpr {
 	}
 }
 
+func isBinop(t tokens.Token) bool {
+	_, ok := binopPriorities[t]
+	return ok
+}
+
 type binop struct {
 	expr ParserOf[ast.Expr]
 }

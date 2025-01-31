@@ -1,5 +1,7 @@
 package ast
 
+import "github.com/LicorneSharing/GTL/optional"
+
 type Expr interface {
 	ExprID() string
 }
@@ -35,3 +37,11 @@ type AddressOf struct {
 }
 
 func (AddressOf) ExprID() string { return "expr:&.:&(.)" }
+
+type InitExpr struct {
+	Type Type
+	Name optional.Value[string]
+	Args ArgBinding
+}
+
+func (InitExpr) ExprID() string { return "expr:init" }
