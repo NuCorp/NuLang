@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"reflect"
 	"strings"
 	"unicode"
 
@@ -26,11 +25,34 @@ type Scanner interface {
 	LookUpTokens(how int) []tokens.Token
 	Next(offset int) TokenInfo
 	Prev(offset int) TokenInfo
-	Clone() Scanner
+	Clone() SharedScanner
 	IsEnded() bool
 }
 
-type common[T interface{ Scan() bool }] struct {
+type SharedScanner interface {
+	Scanner
+	ReSync()
+}
+
+type sharedScanner[T Base] struct {
+	common[T]
+	from *common[T]
+}
+
+func (s *sharedScanner[T]) ReSync() {
+	if s.from.current > s.current {
+		s.common = *s.from
+		return
+	}
+
+	*s.from = s.common
+}
+
+func (s sharedScanner[T]) Scan() bool {
+	return s.scanner.Scan()
+}
+
+type common[T Base] struct {
 	scanner T
 	tokens  CodeToken
 	current int
@@ -117,15 +139,11 @@ func (c *common[T]) Prev(offset int) TokenInfo {
 	}
 	return c.tokens[c.current-offset]
 }
-func (c *common[T]) Clone() Scanner {
-	scanner := reflect.ValueOf(c.scanner)
-	cpy := reflect.New(scanner.Type().Elem())
-	cpy.Elem().Set(scanner.Elem())
-	if !cpy.Elem().FieldByName("common").IsValid() {
-		return cpy.Interface().(Scanner)
+func (c *common[T]) Clone() SharedScanner {
+	return &sharedScanner[T]{
+		common: *c,
+		from:   c,
 	}
-	cpy.Elem().FieldByName("common").FieldByName("Scanner").Set(cpy)
-	return cpy.Interface().(Scanner)
 }
 
 type codeScanner struct {

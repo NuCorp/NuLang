@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"testing"
 
+	tassert "github.com/stretchr/testify/assert"
+
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 
 	"github.com/LicorneSharing/GTL/slices"
@@ -223,6 +225,38 @@ func TestCode(t *testing.T) {
 		}
 	}
 	t.Run("with dot", run("a.b", tokens.IDENT, tokens.DOT, tokens.IDENT))
+}
+
+func TestCommon_Clone(t *testing.T) {
+	var (
+		origin           = Code("a, b, c, 1, 2, 3.(3)")
+		currentTokenInfo = origin.CurrentTokenInfo()
+		nextTokenInfo    = origin.Next(1)
+		shared           = origin.Clone()
+	)
+
+	shared.ConsumeTokenInfo()
+	shared.ConsumeToken()
+
+	tassert.Equal(t, currentTokenInfo, origin.ConsumeTokenInfo())
+	tassert.Equal(t, nextTokenInfo, origin.ConsumeTokenInfo())
+
+	currentTokenInfo = origin.CurrentTokenInfo()
+	expectTokenInfo := origin.Next(2)
+
+	shared.ConsumeTokenInfo()
+	shared.ConsumeTokenInfo()
+	shared.ReSync()
+
+	tassert.Equal(t, expectTokenInfo, origin.CurrentTokenInfo())
+
+	origin.ConsumeTokenInfo()
+	expectTokenInfo = origin.CurrentTokenInfo()
+
+	shared.ReSync()
+
+	tassert.Equal(t, expectTokenInfo, origin.CurrentTokenInfo())
+	tassert.Equal(t, expectTokenInfo, shared.CurrentTokenInfo())
 }
 
 func MockScannerWith(toks ...tokens.Token) Scanner {
