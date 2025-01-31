@@ -100,18 +100,6 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 	return expr
 }
 
-func (e expr) ContinueParsing(from ast.BinopExpr, s scan.Scanner, errors *Errors) ast.BinopExpr {
-	defer func(binopExpr Continuer[ast.Expr, ast.BinopExpr]) {
-		e.binopExpr = binopExpr
-	}(e.binopExpr)
-
-	e.binopExpr = nil
-
-	from.Right = e.Parse(s, errors)
-
-	return from
-}
-
 type tupleExpr struct {
 	expr ParserOf[ast.Expr]
 }

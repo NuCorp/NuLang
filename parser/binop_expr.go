@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser/ast"
+	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
 	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils/maps"
 )
@@ -98,4 +99,28 @@ func isBinop(t tokens.Token) bool {
 
 type binop struct {
 	expr ParserOf[ast.Expr]
+}
+
+func (b binop) ContinueParsing(from ast.Expr, s scan.Scanner, errors *Errors) ast.BinopExpr {
+	operator, ok := ast.GetBinopOperator(s.ConsumeToken())
+
+	assert(ok)
+
+	binop := ast.BinopExpr{Left: from, Op: operator, Right: b.expr.Parse(s, errors)}
+
+	for {
+		operator, ok := ast.GetBinopOperator(s.ConsumeToken())
+
+		if !ok {
+			return binop
+		}
+
+		ignoreOnce(s, tokens.NL)
+
+		binop = ast.BinopExpr{
+			Left:  binop,
+			Op:    operator,
+			Right: b.expr.Parse(s, errors),
+		}
+	}
 }
