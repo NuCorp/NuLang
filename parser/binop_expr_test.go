@@ -93,6 +93,42 @@ func Test_binop_ContinueParsing(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:     "multiple binop 2",
+			code:     "* 12 + 2 / a ?? 28 - 3",
+			fromExpr: ast.IntExpr(42),
+			withExprParser: parserFuncFor[ast.Expr](func(scanner scan.Scanner, errors *Errors) ast.Expr {
+				token := scanner.ConsumeTokenInfo()
+				if token.Token().IsLiteral() {
+					return ast.IntExpr(token.Value().(uint))
+				}
+
+				return ast.DotIdent{token.Value().(string)}
+			}),
+			wantBinop: ast.BinopExpr{ // -
+				// 42 * 12 + 2 / a ?? 28
+				Left: ast.BinopExpr{ // +
+					Left: ast.BinopExpr{ // *
+						Left:  ast.IntExpr(42),
+						Op:    mustGetBinaryOperator(tokens.TIME),
+						Right: ast.IntExpr(12),
+					},
+					Op: mustGetBinaryOperator(tokens.PLUS),
+					// 2 / a ?? 28
+					Right: ast.BinopExpr{ // /
+						Left: ast.IntExpr(2),
+						Op:   mustGetBinaryOperator(tokens.DIV),
+						Right: ast.BinopExpr{
+							Left:  ast.DotIdent{"a"},
+							Op:    mustGetBinaryOperator(tokens.ASKOR),
+							Right: ast.IntExpr(28),
+						},
+					},
+				},
+				Op:    mustGetBinaryOperator(tokens.MINUS),
+				Right: ast.IntExpr(3),
+			},
+		},
 	}
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -103,7 +139,7 @@ func Test_binop_ContinueParsing(t *testing.T) {
 				got     = parser.ContinueParsing(tt.fromExpr, scanner, &errors)
 			)
 
-			tassert.Equal(t, tt.wantBinop, got, "wanted: %v\ngot: %v", tt.wantBinop, got)
+			tassert.Equal(t, tt.wantBinop, got, "wanted: %v\ngot   : %v", tt.wantBinop, got)
 			tassert.Equal(t, tt.wantErrors, errors)
 		})
 	}
@@ -226,4 +262,26 @@ func Test_fixeBinop(t *testing.T) {
 			tassert.Equal(t, tt.wantBinop, got, "wanted: %v\ngot   :%v", tt.wantBinop, got)
 		})
 	}
+}
+
+func checkPriorities(b *ast.BinopExpr) bool {
+	res := true
+
+	if right, ok := b.Right.(ast.BinopExpr); ok {
+		res = res &&
+			binopPriorities[b.Op.BinaryOpToken()] > binopPriorities[right.Op.BinaryOpToken()]
+		checkPriorities(&right)
+	}
+
+	if left, ok := b.Left.(ast.BinopExpr); ok {
+		res = res &&
+			binopPriorities[b.Op.BinaryOpToken()] > binopPriorities[left.Op.BinaryOpToken()]
+		checkPriorities(&left)
+	}
+
+	return res
+}
+
+func Test_organizeBinaryOperator(t *testing.T) {
+	// generate random binop and check that every time priorities are ok for every branch
 }

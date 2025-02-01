@@ -48,50 +48,6 @@ var (
 	binaryOperators = maps.Keys(binopPriorities)
 )
 
-func organizeBinaryOperator(root *ast.BinopExpr) *ast.BinopExpr {
-	current := root
-
-	for {
-		next, ok := current.Right.(*ast.BinopExpr)
-		if !ok {
-			return root
-		}
-
-		opCur := current.Op.BinaryOpToken()
-		opNext := next.Op.BinaryOpToken()
-
-		if binopPriorities[opCur] < binopPriorities[opNext] {
-			prevNext := *next
-			*next = ast.BinopExpr{
-				Left:  current.Left,
-				Op:    current.Op,
-				Right: next.Left,
-			}
-			*current = ast.BinopExpr{ // current
-				Left:  next, // will become newLeft
-				Op:    prevNext.Op,
-				Right: prevNext.Right,
-			}
-
-			/*
-						OP1 (current)
-						|		\
-						a	 	OP2 (next)
-								|	\
-								b	...
-				==>
-						OP2 (current)
-						|			\
-						OP1 (next)	...
-						|	\
-						a	b
-			*/
-		} else {
-			current = next
-		}
-	}
-}
-
 func isBinop(t tokens.Token) bool {
 	_, ok := binopPriorities[t]
 	return ok
@@ -101,26 +57,138 @@ type binop struct {
 	expr ParserOf[ast.Expr]
 }
 
+func fixeBinop(root *ast.BinopExpr) ast.BinopExpr {
+	prevs := []*ast.BinopExpr{
+		root,
+		root,
+	}
+
+	lastPrev := func() *ast.BinopExpr {
+		if len(prevs) == 0 {
+			return nil
+		}
+		return prevs[len(prevs)-1]
+	}
+
+	current := root
+
+	for {
+		for {
+			right, ok := current.Right.(*ast.BinopExpr)
+			if !ok {
+				break
+			}
+
+			prevs = append(prevs, right)
+			current = right
+		}
+
+		for {
+			left, ok := current.Left.(*ast.BinopExpr)
+			if !ok {
+				break
+			}
+
+			prevs = append(prevs, left)
+			current = left
+		}
+
+		if _, ok := current.Right.(*ast.BinopExpr); ok {
+			continue
+		}
+
+		if current == root {
+			return *root
+		}
+
+		if current == lastPrev().Right {
+			lastPrev().Right = *current
+		} else if current == lastPrev().Left {
+			lastPrev().Left = *current
+		}
+
+		current = lastPrev()
+		prevs = prevs[:len(prevs)-1]
+
+		if current == root {
+			prevs = append(prevs, root)
+		}
+	}
+
+	return *root
+}
+
+func organizeBinaryOperator(root *ast.BinopExpr) ast.BinopExpr {
+	var (
+		froms   = make(map[*ast.BinopExpr]*ast.BinopExpr)
+		current = root
+	)
+
+	for {
+		next, ok := current.Left.(*ast.BinopExpr)
+		if !ok {
+			return fixeBinop(root) // todo
+		}
+
+		froms[next] = current
+		var (
+			from = next
+			to   = current
+		)
+
+		for up(from, to) {
+			from = to
+			to, ok = froms[from]
+
+			if !ok {
+				break
+			}
+		}
+
+		current = from
+	}
+}
+
+func up(from, to *ast.BinopExpr) bool {
+	if binopPriorities[from.Op.BinaryOpToken()] < binopPriorities[to.Op.BinaryOpToken()] {
+		return false
+	}
+
+	prev := *to
+
+	to.Op = from.Op
+	to.Left = from.Left
+	to.Right = &prev
+
+	prev.Left = from.Right
+
+	return true
+}
+
 func (b binop) ContinueParsing(from ast.Expr, s scan.Scanner, errors *Errors) ast.BinopExpr {
 	operator, ok := ast.GetBinopOperator(s.ConsumeToken())
 
 	assert(ok)
 
-	binop := ast.BinopExpr{Left: from, Op: operator, Right: b.expr.Parse(s, errors)}
+	binop := &ast.BinopExpr{Left: from, Op: operator, Right: b.expr.Parse(s, errors)}
 
-	for {
-		operator, ok := ast.GetBinopOperator(s.ConsumeToken())
+	ignoreOnce(s, tokens.NL)
 
-		if !ok {
-			return binop
-		}
+	operator, ok = ast.GetBinopOperator(s.CurrentToken())
 
-		ignoreOnce(s, tokens.NL)
+	for ok {
+		s.ConsumeTokenInfo()
 
-		binop = ast.BinopExpr{
+		binop = &ast.BinopExpr{
 			Left:  binop,
 			Op:    operator,
 			Right: b.expr.Parse(s, errors),
 		}
+
+		operator, ok = ast.GetBinopOperator(s.CurrentToken())
+
+		ignoreOnce(s, tokens.NL)
 	}
+
+	return organizeBinaryOperator(binop)
 }
