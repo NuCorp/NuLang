@@ -127,7 +127,7 @@ func organizeBinaryOperator(root *ast.BinopExpr) ast.BinopExpr {
 	for {
 		next, ok := current.Left.(*ast.BinopExpr)
 		if !ok {
-			return fixeBinop(root) // todo
+			return fixeBinop(root)
 		}
 
 		froms[next] = current
