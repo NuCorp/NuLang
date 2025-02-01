@@ -16,9 +16,49 @@ func (b binaryOperator) BinaryOpToken() tokens.Token {
 	return b.token
 }
 
+func (b binaryOperator) String() string {
+	return b.token.String()
+}
+
 var binaryOperators = map[tokens.Token]binaryOperator{
 	tokens.ASKOR: {
 		token: tokens.ASKOR,
+	},
+	tokens.PLUS: {
+		token: tokens.PLUS,
+	},
+	tokens.MINUS: {
+		token: tokens.MINUS,
+	},
+	tokens.TIME: {
+		token: tokens.TIME,
+	},
+	tokens.DIV: {
+		token: tokens.DIV,
+	},
+	tokens.FRAC_DIV: {
+		token: tokens.FRAC_DIV,
+	},
+	tokens.MOD: {
+		token: tokens.MOD,
+	},
+	tokens.EQ: {
+		token: tokens.EQ,
+	},
+	tokens.NEQ: {
+		token: tokens.NEQ,
+	},
+	tokens.GT: {
+		token: tokens.GT,
+	},
+	tokens.LT: {
+		token: tokens.LT,
+	},
+	tokens.GE: {
+		token: tokens.GE,
+	},
+	tokens.LE: {
+		token: tokens.LE,
 	},
 }
 
