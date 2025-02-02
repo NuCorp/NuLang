@@ -143,8 +143,9 @@ const (
 )
 
 const (
-	STAR = TIME
-	REF  = LAND
+	ARROW = IMPL
+	STAR  = TIME
+	REF   = LAND
 )
 
 func (t Token) String() string {

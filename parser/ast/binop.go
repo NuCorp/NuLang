@@ -78,4 +78,4 @@ type BinopExpr struct {
 	Right Expr
 }
 
-func (BinopExpr) ExprID() string { return "expr:binop" }
+func (BinopExpr) expr() {}

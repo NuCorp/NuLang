@@ -3,16 +3,14 @@ package ast
 import "github.com/LicorneSharing/GTL/optional"
 
 type Expr interface {
-	ExprID() string
+	expr()
 }
 
-func (d DotIdent) ExprID() string {
-	return "expr:ident"
-}
+func (d DotIdent) expr() {}
 
 type TupleExpr []Expr
 
-func (t TupleExpr) ExprID() string { return "expr:tuple" }
+func (t TupleExpr) expr() {}
 
 type AsTypeExpr struct {
 	Forced bool
@@ -21,7 +19,7 @@ type AsTypeExpr struct {
 	AsType Type
 }
 
-func (AsTypeExpr) ExprID() string { return "expr:as" }
+func (AsTypeExpr) expr() {}
 
 type IsTypeExpr struct {
 	Constexpr bool
@@ -29,19 +27,59 @@ type IsTypeExpr struct {
 	IsType    Type
 }
 
-func (IsTypeExpr) ExprID() string { return "expr:is" }
+func (IsTypeExpr) expr() {}
 
 type AddressOf struct {
 	RealAddress bool
 	Expr        Expr
 }
 
-func (AddressOf) ExprID() string { return "expr:&.:&(.)" }
+func (AddressOf) expr() {}
 
-type InitExpr struct {
-	Type Type
-	Name optional.Value[string]
-	Args ArgBinding
+type InterfaceInitExpr struct {
+	Name optional.Value[NamedType]
+
+	/*
+		Methods is the field used to represent
+			Error {
+				const Msg() => "msg"
+			}
+		or
+			Error {
+				const Msg() string {
+					return "msg"
+				}
+			}
+	*/
+	Methods []FuncDef
+
+	/*
+		DirectMethod is the field used to represent
+			Error => "msg"
+		or
+			Error {
+				return "msg"
+			}
+	*/
+	DirectMethod any
 }
 
-func (InitExpr) ExprID() string { return "expr:init" }
+func (InterfaceInitExpr) expr() {}
+func (InterfaceInitExpr) init() {}
+
+type ClassicInitExpr struct {
+	Type     Type
+	MayThrow bool
+	Named    optional.Value[string]
+	FromAs   optional.Value[Expr]
+	Args     map[string]Expr
+	BoolArgs map[string]bool
+}
+
+func (ClassicInitExpr) expr() {}
+func (ClassicInitExpr) init() {}
+
+type InitExpr interface {
+	Expr
+	init()
+}

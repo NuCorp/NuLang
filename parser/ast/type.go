@@ -18,7 +18,7 @@ func (s StructType) TypeID() string {
 	return "type:struct"
 }
 
-type NamedType DotIdent
+type NamedType = DotIdent
 
 func (n NamedType) TypeID() string {
 	return "type:named"

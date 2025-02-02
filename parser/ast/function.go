@@ -24,7 +24,7 @@ type FuncExpr struct {
 	Body   any
 }
 
-func (FuncExpr) ExprID() string { return "expr:func" }
+func (FuncExpr) expr()          {}
 func (FuncExpr) FuncID() string { return "func:func" }
 
 func (DotIdent) FuncID() string { return "func:named" }
@@ -40,4 +40,4 @@ type FuncCall struct {
 	Args ArgBinding
 }
 
-func (FuncCall) ExprID() string { return "expr:call" }
+func (FuncCall) expr() {}
