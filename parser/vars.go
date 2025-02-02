@@ -24,7 +24,7 @@ func (p varDef) Parse(s scan.Scanner, errors *Errors) []ast.Var {
 			vars = append(vars, p.groupedVar.Parse(s, errors)...)
 		}
 
-		if s.CurrentToken() == tokens.STAR {
+		if s.CurrentToken().IsOneOf(tokens.OPAREN, tokens.STAR) {
 			bindingVars, err := p.bindingAssigned.Parse(s, errors).ToVars()
 			if err != nil {
 				errors.Set(s.CurrentPos(), fmt.Sprintf("can't use that binding assignment in var context: %s", err.Error()))
@@ -38,7 +38,7 @@ func (p varDef) Parse(s scan.Scanner, errors *Errors) []ast.Var {
 			ignore(s, tokens.NL)
 
 			if !s.CurrentToken().IsOneOf(tokens.IDENT, tokens.STAR) {
-				errors.Set(s.CurrentPos(), "expected ident or * to continue var declaration")
+				errors.Set(s.CurrentPos(), "expected ident, `*` or `(` to continue var declaration")
 				return vars
 			}
 		}
@@ -66,7 +66,7 @@ func (p groupedVar) Parse(s scan.Scanner, errors *Errors) []ast.Var {
 
 		ignore(s, tokens.NL)
 
-		if s.CurrentToken() == tokens.STAR {
+		if s.CurrentToken() == tokens.OPAREN {
 			if lastTyped < len(vars) {
 				errors.Set(s.CurrentPos(), fmt.Sprintf("missing type for %d variable", len(vars)-lastTyped))
 			}
@@ -131,34 +131,13 @@ func (p groupedVar) Parse(s scan.Scanner, errors *Errors) []ast.Var {
 }
 
 type bindingAssigned struct {
-	subbinding ParserOf[ast.SubBinding]
-	expr       ParserOf[ast.Expr]
-}
-
-type subbindingParser struct {
-	namebindingAssign  ParserOf[ast.NameBindingAssign]
-	orderbindingAssign ParserOf[ast.OrderBindingAssign]
-}
-
-func (b subbindingParser) Parse(s scan.Scanner, errors *Errors) ast.SubBinding {
-	assert(s.ConsumeToken() == tokens.STAR)
-
-	var binding ast.SubBinding
-
-	switch s.CurrentToken() {
-	case tokens.OBRAC:
-		return b.namebindingAssign.Parse(s, errors)
-	case tokens.OBRAK:
-		return b.orderbindingAssign.Parse(s, errors)
-	default:
-		errors.Set(s.CurrentPos(), "expect { or [ to make a binding assignment")
-		skipToEOI(s, tokens.COMMA)
-		return binding
-	}
+	assignmentToken tokens.Token
+	subbinding      ParserOf[ast.SubBinding]
+	expr            ParserOf[ast.Expr]
 }
 
 func (b bindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.BindingAssign {
-	assert(s.CurrentToken() == tokens.STAR)
+	assert(s.CurrentToken() == tokens.STAR || s.CurrentToken() == tokens.STAR)
 	var (
 		binding ast.BindingAssign
 
@@ -184,22 +163,80 @@ func (b bindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.BindingAssign
 	return binding
 }
 
+func (b bindingAssigned) CanParse(s scan.SharedScanner) bool {
+	/*
+		`*( -.-.-> ) =` ok
+		`( -.-.-> ) =` ok
+		`=` can also be `:=` depending on b.assignmentToken
+		No \n after `)`; the assignmentToken must follow right after.
+	*/
+
+	if !s.CurrentToken().IsOneOf(tokens.OPAREN, tokens.STAR) {
+		return false
+	}
+
+	if s.ConsumeToken() == tokens.STAR && s.CurrentToken() != tokens.OPAREN {
+		return false
+	}
+
+	if s.CurrentToken() == tokens.OPAREN {
+		s.ConsumeTokenInfo()
+	}
+
+	open := 1
+
+	for !s.IsEnded() && open > 0 && !s.CurrentToken().IsEoI() {
+		switch s.CurrentToken() {
+		case tokens.OPAREN:
+			open++
+		case tokens.CPAREN:
+			open--
+		}
+
+		s.ConsumeTokenInfo()
+	}
+
+	return s.CurrentToken() == b.assignmentToken
+}
+
+type subbindingParser struct {
+	namebindingAssign  ParserOf[ast.NameBindingAssign]
+	orderbindingAssign ParserOf[ast.OrderBindingAssign]
+}
+
+func (b subbindingParser) Parse(s scan.Scanner, errors *Errors) ast.SubBinding {
+	assert(s.CurrentToken().IsOneOf(tokens.STAR, tokens.OPAREN))
+
+	named := false
+
+	if s.CurrentToken() == tokens.STAR {
+		named = true
+		s.ConsumeTokenInfo()
+	}
+
+	if named {
+		return b.namebindingAssign.Parse(s, errors)
+	}
+
+	return b.orderbindingAssign.Parse(s, errors)
+}
+
 type nameBindingAssigned struct {
 	subbinding ParserOf[ast.SubBinding]
 	expr       ParserOf[ast.Expr]
 }
 
 func (n nameBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.NameBindingAssign {
-	assert(s.ConsumeToken() == tokens.OBRAC)
+	assert(s.ConsumeToken() == tokens.OPAREN, "expected `(` but got `%v` (%v)", s.Prev(1), s.Prev(1).Token())
 
 	/*
-			- {a}
-			- {a: .b}
-			- {*{a}: .b} => *{a} = subbinding
-			- {*[a]: .b} => *[a] = subbinding
-			- {a: .b?}
-			- {a: .b!}
-			- {a: .b ?? Expr}
+			- (a)
+			- (a: .b)
+			- (*(a): .b) => *(a) = subbinding
+			- ((a): .b) => (a) = subbinding
+			- (a: .b?)
+			- (a: .b!)
+			- (a: .b ?? Expr)
 
 		for v2:
 			- {a!}
@@ -223,13 +260,13 @@ func (n nameBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.NameBindi
 		var needNaming bool
 
 		switch s.CurrentToken() {
-		case tokens.STAR:
+		case tokens.STAR, tokens.OPAREN:
 			needNaming = true
 			binding.Elems = append(binding.Elems, n.subbinding.Parse(s, errors))
 		case tokens.IDENT:
 			binding.Elems = append(binding.Elems, ast.DotIdent{s.ConsumeTokenInfo().RawString()})
 		default:
-			errors.Set(s.CurrentPos(), "invalid element for a name binding assignation")
+			errors.Set(s.CurrentPos(), fmt.Sprintf("invalid element %v for a name binding assignation", s.CurrentToken()))
 			skipToEOI(s, tokens.COMMA, tokens.CBRAC)
 
 			if s.CurrentToken().IsEoI() {
@@ -246,7 +283,7 @@ func (n nameBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.NameBindi
 			}
 
 			continue
-		case tokens.CBRAC:
+		case tokens.CPAREN:
 			s.ConsumeTokenInfo()
 
 			if needNaming {
@@ -297,7 +334,7 @@ func (n nameBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.NameBindi
 				continue
 			}
 
-			if s.CurrentToken() == tokens.CBRAC {
+			if s.CurrentToken() == tokens.CPAREN {
 				s.ConsumeTokenInfo()
 
 				return binding
@@ -312,29 +349,29 @@ type orderBindingAssigned struct {
 }
 
 func (o orderBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.OrderBindingAssign {
-	assert(s.ConsumeToken() == tokens.OBRAK)
+	assert(s.ConsumeToken() == tokens.OPAREN, "expected '(' but got `%v` (%v)", s.Prev(1), s.Prev(1).Token())
 
 	/*
-		- [a]
-		- [*{a}] => *{a} = subbinding
-		- [*[a]] => *[a] = subbinding
-		- [a?]              |
-		- [a!]              | > also works with: [*{a}!] etc...
-		- [a ?? Expr]       |
-		- [_] => no ident
+		- (a)
+		- (*(a)) => *(a) = subbinding
+		- ((a)) => *(a) = subbinding
+		- (a?)              |
+		- (a!)              | > also works with: [*{a}!] etc...
+		- (a ?? Expr)       |
+		- (_) => no ident
 	*/
 
 	var binding ast.OrderBindingAssign
 
 	for {
 		switch s.CurrentToken() {
-		case tokens.STAR:
+		case tokens.STAR, tokens.OPAREN:
 			binding.Elems = append(binding.Elems, o.subbinding.Parse(s, errors))
 		case tokens.IDENT:
 			binding.Elems = append(binding.Elems, ast.DotIdent{s.ConsumeTokenInfo().RawString()})
 		default:
 			errors.Set(s.CurrentPos(), "expected '*' (sub-binding) or an identifier inside order binding assignment")
-			skipToEOI(s, tokens.COMMA, tokens.CBRAC)
+			skipToEOI(s, tokens.COMMA, tokens.CPAREN)
 
 			if s.CurrentToken().IsEoI() {
 				return binding
@@ -363,7 +400,7 @@ func (o orderBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.OrderBin
 			s.ConsumeTokenInfo()
 			ignore(s, tokens.NL)
 			continue
-		case tokens.CBRAK:
+		case tokens.CPAREN:
 			s.ConsumeTokenInfo()
 			return binding
 		default:
@@ -375,13 +412,13 @@ func (o orderBindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.OrderBin
 				),
 			)
 
-			skipToEOI(s, tokens.CBRAK, tokens.COMMA)
+			skipToEOI(s, tokens.CPAREN, tokens.COMMA)
 
 			if s.CurrentToken().IsEoI() {
 				return binding
 			}
 
-			if s.CurrentToken() == tokens.CBRAK {
+			if s.CurrentToken() == tokens.CPAREN {
 				s.ConsumeTokenInfo()
 				return binding
 			}

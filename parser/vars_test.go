@@ -190,7 +190,7 @@ func Test_nameBindingAssigned_Parse(t *testing.T) {
 	}{
 		{
 			name: "no sub-binding",
-			code: "{a, b}",
+			code: "(a, b)",
 			wantNameBinding: ast.NameBindingAssign{
 				Elems: []ast.SubBinding{
 					ast.DotIdent{"a"},
@@ -200,7 +200,7 @@ func Test_nameBindingAssigned_Parse(t *testing.T) {
 		},
 		{
 			name: "name sub-binding",
-			code: "{a, *{b}: .c}",
+			code: "(a, *(b): .c)",
 			wantNameBinding: ast.NameBindingAssign{
 				Elems: []ast.SubBinding{
 					ast.DotIdent{"a"},
@@ -217,7 +217,7 @@ func Test_nameBindingAssigned_Parse(t *testing.T) {
 		},
 		{
 			name: "with force ask and askor",
-			code: "{a: .a!, *{b}: .c?, d: .d ?? 42}",
+			code: "(a: .a!, *(b): .c?, d: .d ?? 42)",
 			exprParser: func(scanner scan.Scanner, errors *Errors) ast.Expr {
 				scanner.ConsumeTokenInfo()
 				return ast.IntExpr(42)
@@ -287,7 +287,7 @@ func Test_orderBindingAssigned_Parse(t *testing.T) {
 	}{
 		{
 			name: "no sub-binding",
-			code: "[a, b]",
+			code: "(a, b)",
 			wantOrderBinding: ast.OrderBindingAssign{
 				Elems: []ast.SubBinding{
 					ast.DotIdent{"a"},
@@ -297,7 +297,7 @@ func Test_orderBindingAssigned_Parse(t *testing.T) {
 		},
 		{
 			name: "order sub-binding",
-			code: "[a, *[b]]",
+			code: "(a, (b))",
 			wantOrderBinding: ast.OrderBindingAssign{
 				Elems: []ast.SubBinding{
 					ast.DotIdent{"a"},
@@ -311,7 +311,7 @@ func Test_orderBindingAssigned_Parse(t *testing.T) {
 		},
 		{
 			name: "with force ask and askor",
-			code: "[a!, *[b]?, d ?? 42]",
+			code: "(a!, (b)?, d ?? 42)",
 			exprParser: func(scanner scan.Scanner, errors *Errors) ast.Expr {
 				scanner.ConsumeTokenInfo()
 				return ast.IntExpr(42)

@@ -51,9 +51,19 @@ func requires(s scan.Scanner, t1 tokens.Token, or ...tokens.Token) {
 	assert(s.CurrentToken().IsOneOf(append(or, t1)...))
 }
 
-func assert(cond bool) {
+func assert(cond bool, msgAndFmt ...any) {
+	var msg string
+
+	if len(msgAndFmt) > 0 {
+		if first, ok := msgAndFmt[0].(string); ok {
+			msg = ": " + fmt.Sprintf(first, msgAndFmt[1:]...)
+		} else {
+			msg = ": " + fmt.Sprint(msgAndFmt...)
+		}
+	}
+
 	if !cond {
-		panic("INVALID CALL TO FUNCTION")
+		panic("INVALID CALL TO FUNCTION" + msg)
 	}
 }
 
