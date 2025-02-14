@@ -58,6 +58,35 @@ func (i initExpr) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors)
 	}
 
 	// classic init
+	assert(s.CurrentToken().IsOneOf(tokens.COLON, tokens.OBRAC))
 
-	return nil
+	var (
+		init       = ast.ClassicInitExpr{Type: from}
+		tmpScanner = s.Clone()
+	)
+
+	if tmpScanner.ConsumeToken() == tokens.COLON {
+		if tmpScanner.ConsumeToken() != tokens.IDENT {
+			errors.Set(tmpScanner.CurrentPos(), "expected an identifier after `TYPE:` in order to make a named init expr")
+			skipToEOI(s)
+			return init
+		}
+
+		init.Named.Set(tmpScanner.ConsumeTokenInfo().Value().(string))
+		tmpScanner.ReSync()
+	}
+
+	if s.CurrentToken() != tokens.OBRAC {
+		errors.Set(s.CurrentPos(), "expected `{` to start init expr")
+		skipToEOI(s)
+		return init
+	}
+
+	s.ConsumeTokenInfo()
+
+	// if init.Named? then we can make an innerArgumentParsing
+	// if not, we must see if the token is `*` => innerArgumentParsing
+	// finally if it is an expr, we parse the expr and then check that token is `*` => innerArgumentParsing
+
+	return init
 }
