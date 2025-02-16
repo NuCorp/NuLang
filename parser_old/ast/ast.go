@@ -6,7 +6,7 @@ import (
 	"github.com/LicorneSharing/GTL/optional"
 	"github.com/LicorneSharing/GTL/slices"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/NuCorp/NuLang/scan"
 )
 
 type Ast interface {

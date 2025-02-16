@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser_old/ast"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils/maps"
+	"github.com/NuCorp/NuLang/container"
+	"github.com/NuCorp/NuLang/parser_old/ast"
+	"github.com/NuCorp/NuLang/scan"
+	"github.com/NuCorp/NuLang/scan/tokens"
+	"github.com/NuCorp/NuLang/utils/maps"
 )
 
 //

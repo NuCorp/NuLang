@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+	"github.com/NuCorp/NuLang/container"
+	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
 type tokenizeInt struct {

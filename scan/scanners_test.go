@@ -6,7 +6,7 @@ import (
 
 	tassert "github.com/stretchr/testify/assert"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+	"github.com/NuCorp/NuLang/scan/tokens"
 
 	"github.com/LicorneSharing/GTL/slices"
 )

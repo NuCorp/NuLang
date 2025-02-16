@@ -3,9 +3,9 @@ package parser_old
 import (
 	"fmt"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser_old/ast"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+	"github.com/NuCorp/NuLang/parser_old/ast"
+	"github.com/NuCorp/NuLang/scan"
+	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
 func parseType(s scan.Scanner, errors Errors) ast.Types {

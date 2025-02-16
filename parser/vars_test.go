@@ -6,9 +6,9 @@ import (
 
 	tassert "github.com/stretchr/testify/assert"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser/ast"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
+	"github.com/NuCorp/NuLang/container"
+	"github.com/NuCorp/NuLang/parser/ast"
+	"github.com/NuCorp/NuLang/scan"
 )
 
 // FinalValuesEqual will compare expected vs got but will only compare final value dereferenced of each field of

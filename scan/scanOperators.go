@@ -3,7 +3,7 @@ package scan
 import (
 	"strings"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
 type tokenizeOperatorAndPunctuation struct {

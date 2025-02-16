@@ -3,7 +3,7 @@ package parser_old
 import (
 	"testing"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser_old/ast"
+	"github.com/NuCorp/NuLang/parser_old/ast"
 
 	tassert "github.com/stretchr/testify/assert"
 )

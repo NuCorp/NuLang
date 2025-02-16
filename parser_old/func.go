@@ -5,9 +5,9 @@ import (
 
 	"github.com/LicorneSharing/GTL/optional"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser_old/ast"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+	"github.com/NuCorp/NuLang/parser_old/ast"
+	"github.com/NuCorp/NuLang/scan"
+	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
 func parseFuncParameters(s scan.Scanner, errors Errors) ([]ast.Parameter, optional.Value[*ast.Parameter]) {

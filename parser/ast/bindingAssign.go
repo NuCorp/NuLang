@@ -6,7 +6,7 @@ import (
 	"github.com/LicorneSharing/GTL/optional"
 	gtlslices "github.com/LicorneSharing/GTL/slices"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
+	"github.com/NuCorp/NuLang/container"
 )
 
 type BindingAssign struct {

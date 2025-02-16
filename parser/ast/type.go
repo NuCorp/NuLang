@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
+	"github.com/NuCorp/NuLang/container"
 )
 
 type Type interface {

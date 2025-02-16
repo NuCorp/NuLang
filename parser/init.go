@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/parser/ast"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+	"github.com/NuCorp/NuLang/parser/ast"
+	"github.com/NuCorp/NuLang/scan"
+	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
 type initExpr struct {

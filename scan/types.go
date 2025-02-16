@@ -2,7 +2,7 @@ package scan
 
 import (
 	"fmt"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/utils"
+	"github.com/NuCorp/NuLang/utils"
 	"strings"
 )
 

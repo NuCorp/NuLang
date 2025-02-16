@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
 type Base interface {

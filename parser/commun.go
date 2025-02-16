@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/container"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan"
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+	"github.com/NuCorp/NuLang/container"
+	"github.com/NuCorp/NuLang/scan"
+	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
 type tokenPosSliceOrder struct{}
@@ -41,6 +41,39 @@ func continuerToParser[F, T any](from F, continuer Continuer[F, T]) ParserOf[T] 
 	return parserFuncFor[T](func(scanner scan.Scanner, errors *Errors) T {
 		return continuer.ContinueParsing(from, scanner, errors)
 	})
+}
+
+type Converter[F, T any] interface {
+	Convert(from F) T
+}
+
+type ConverterFunc[F, T any] func(from F) T
+
+func (c ConverterFunc[F, T]) Convert(from F) T {
+	return c(from)
+}
+
+type ValueConverter[F, T any] struct {
+	To T
+}
+
+func (v ValueConverter[F, T]) Convert(from F) T {
+	return v.To
+}
+
+type ContinuerCast[F, T1, T2 any] struct {
+	FromContinuer Continuer[F, T1]
+	Converter     Converter[T1, T2]
+}
+
+func (c ContinuerCast[F, T1, T2]) ContinueParsing(from F, scanner scan.Scanner, errors *Errors) T2 {
+	if c.FromContinuer != nil {
+		return c.Converter.Convert(c.FromContinuer.ContinueParsing(from, scanner, errors))
+	}
+
+	var result any = c.FromContinuer.ContinueParsing(from, scanner, errors)
+
+	return result.(T2)
 }
 
 type conditionalParser interface {

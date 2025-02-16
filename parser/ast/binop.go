@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/DarkMiMolle/NuProjects/Nu-beta-1/scan/tokens"
+import "github.com/NuCorp/NuLang/scan/tokens"
 
 type operator struct {
 	token tokens.Token

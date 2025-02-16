@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/DarkMiMolle/NuProjects/Nu-beta-1/cmp"
+	"github.com/NuCorp/NuLang/cmp"
 )
 
 type KeyVal[K, V any] struct {
