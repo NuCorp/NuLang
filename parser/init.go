@@ -6,6 +6,71 @@ import (
 	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
+/*
+different type of init:
+- TYPE{ opt(repeat(NL)) EXPR opt(, repeat{, opt(repeat(NL))}(IDENT|*IDENT opt(: EXPR))) opt(repeat(NL)) }
+- TYPE:IDENT{ARGS_BINDING}
+- TYPE:{ opt(repeat(NL)) METHOD_DEF opt(repeat(NL)) }
+- TYPE opt((ARGS_DEF) opt(TYPE)) => EXPR
+
+METHOD_DEF:
+- opt(const|set) IDENT ( ARGS_DEF ) opt(TYPE) METHOD_SCOPE
+- opt(const|set) IDENT ( ARGS_DEF ) opt(TYPE) => EXPR
+
+TYPE { --> 1
+TYPE:IDENT --> 2
+TYPE:{ --> 3
+TYPE ( --> 4
+TYPE => --> 4
+*/
+
+type simpleInit struct {
+	expr ParserOf[ast.Expr]
+}
+
+type knownErrorContinuer[F, T any] struct {
+	sharedScanner scan.SharedScanner
+	errorMsg      string
+	errorValue    T
+}
+
+func (e knownErrorContinuer[F, T]) ContinueParsing(_ F, s scan.Scanner, errors *Errors) T {
+	if !e.sharedScanner.IsLinkedTo(s) {
+		panic("should not use different scanner inside a same parsing session")
+	}
+
+	e.sharedScanner.ReSync()
+	errors.Set(s.CurrentPos(), e.errorMsg)
+
+	return e.errorValue
+}
+
+func (i initExpr) selectInit(s scan.SharedScanner) Continuer[ast.Type, ast.InitExpr] {
+	type continuerInitAs[T any] = ContinuerCast[ast.Type, T, ast.InitExpr]
+
+	switch s.ConsumeToken() {
+	case tokens.COLON: // TYPE :
+		if s.ConsumeToken() == tokens.IDENT { // TYPE : IDENT
+			return nil // namedInit
+		}
+
+		// if it is not `TYPE : IDENT` it shall be: TYPE : { --> 3
+		fallthrough
+	case tokens.OPAREN, tokens.ARROW: // `TYPE (` or `TYPE =>` --> 4
+		return continuerInitAs[ast.InterfaceInitExpr]{
+			FromContinuer: i.interfaceInit,
+		}
+	case tokens.OBRAC: // TYPE { --> 1
+		return nil // simple init
+	default:
+		return nil // no init matching
+	}
+}
+
+func (i simpleInit) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors) ast.InitExpr {
+	return nil
+}
+
 type initExpr struct {
 	interfaceInit Continuer[ast.Type, ast.InterfaceInitExpr]
 	expr          ParserOf[ast.Expr]
