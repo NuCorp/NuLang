@@ -259,6 +259,27 @@ func TestCommon_Clone(t *testing.T) {
 	tassert.Equal(t, expectTokenInfo, shared.CurrentTokenInfo())
 }
 
+func TestSharedScanner_IsLinkedTo(t *testing.T) {
+	var (
+		origin1 = Code("a, b, c, 1, 2, 3.(3)")
+		origin2 = Code("a, b, c")
+		shared  = origin1.Clone()
+	)
+
+	tassert.True(t, shared.IsLinkedTo(origin1))
+	tassert.False(t, shared.IsLinkedTo(origin2))
+
+	shared.ConsumeTokenInfo()
+
+	tassert.True(t, shared.IsLinkedTo(origin1))
+	tassert.False(t, shared.IsLinkedTo(origin2))
+
+	shared = origin2.Clone()
+
+	tassert.True(t, shared.IsLinkedTo(origin2))
+	tassert.False(t, shared.IsLinkedTo(origin1))
+}
+
 func MockScannerWith(toks ...tokens.Token) Scanner {
 	scanner := &codeScanner{}
 	var i = 0

@@ -32,6 +32,7 @@ type Scanner interface {
 type SharedScanner interface {
 	Scanner
 	ReSync()
+	IsLinkedTo(s Scanner) bool
 }
 
 type sharedScanner[T Base] struct {
@@ -50,6 +51,12 @@ func (s *sharedScanner[T]) ReSync() {
 
 func (s sharedScanner[T]) Scan() bool {
 	return s.scanner.Scan()
+}
+
+func (s sharedScanner[T]) IsLinkedTo(sc Scanner) bool {
+	var b Base = s.scanner
+
+	return b == sc
 }
 
 type common[T Base] struct {
