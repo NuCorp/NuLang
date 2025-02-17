@@ -18,6 +18,8 @@ METHOD_DEF:
 - opt(const|set) IDENT ( ARGS_DEF ) opt(TYPE) => EXPR
 
 TYPE { --> 1
+TYPE? --> 1
+TYPE! --> 1
 TYPE:IDENT --> 2
 TYPE:{ --> 3
 TYPE ( --> 4
@@ -60,7 +62,7 @@ func (i initExpr) selectInit(s scan.SharedScanner) Continuer[ast.Type, ast.InitE
 		return continuerInitAs[ast.InterfaceInitExpr]{
 			FromContinuer: i.interfaceInit,
 		}
-	case tokens.OBRAC: // TYPE { --> 1
+	case tokens.OBRAC, tokens.NOT, tokens.ASK: // TYPE { --> 1
 		return nil // simple init
 	default:
 		return nil // no init matching
@@ -137,7 +139,7 @@ func (i initExpr) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors)
 			return init
 		}
 
-		init.Named.Set(tmpScanner.ConsumeTokenInfo().Value().(string))
+		// init.Named.Set(tmpScanner.ConsumeTokenInfo().Value().(string))
 		tmpScanner.ReSync()
 	}
 
