@@ -28,16 +28,35 @@ type InterfaceInitExpr struct {
 func (InterfaceInitExpr) expr() {}
 func (InterfaceInitExpr) init() {}
 
-type ClassicInitExpr struct {
+type ThrowIndicator int
+
+const (
+	NotThrowing ThrowIndicator = iota
+	MayThrow
+	MustThrow
+)
+
+type SimpleInitExpr struct {
 	Type     Type
-	MayThrow bool
+	MayThrow ThrowIndicator
 	FromAs   optional.Value[Expr]
 	Args     map[string]Expr
 	BoolArgs map[string]bool
 }
 
-func (ClassicInitExpr) expr() {}
-func (ClassicInitExpr) init() {}
+func (SimpleInitExpr) expr() {}
+func (SimpleInitExpr) init() {}
+
+type NamedInitExpr struct {
+	Type      Type
+	Name      string
+	MayThrow  bool
+	Args      []Expr
+	NamedArgs map[int]string
+	BoolArgs  map[int]bool
+	// Unstructured map[int]struct{}
+	// NamedUnstructured map[int]struct{}
+}
 
 type InitExpr interface {
 	Expr

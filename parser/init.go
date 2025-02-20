@@ -69,12 +69,76 @@ func (i initExpr) selectInit(s scan.SharedScanner) Continuer[ast.Type, ast.InitE
 	}
 }
 
-func (i simpleInit) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors) ast.InitExpr {
-	return nil
+func (i simpleInit) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors) ast.SimpleInitExpr {
+	assert(s.CurrentToken().IsOneOf(tokens.OBRAC, tokens.NOT, tokens.ASK))
+
+	init := ast.SimpleInitExpr{Type: from}
+
+	switch s.ConsumeToken() {
+	case tokens.NOT:
+		init.MayThrow = ast.MustThrow
+	case tokens.ASK:
+		init.MayThrow = ast.MayThrow
+	default:
+	}
+
+	if s.CurrentToken() != tokens.OBRAC {
+		errors.Set(s.CurrentPos(), "expected '{' to start an init expression")
+		return init
+	}
+
+	s.ConsumeTokenInfo()
+
+	if s.CurrentToken() != tokens.STAR {
+		init.FromAs.Set(i.expr.Parse(s, errors))
+	}
+
+	if s.CurrentToken() == tokens.CBRAC {
+		s.ConsumeTokenInfo()
+		return init
+	}
+
+	switch {
+	case init.FromAs.HasValue() && s.CurrentToken() != tokens.COMMA:
+		errors.Set(s.CurrentPos(), "expected ',' to continue the init expression")
+		skipTo(s, tokens.COMMA)
+		return init
+	case init.FromAs.HasValue():
+		s.ConsumeTokenInfo()
+	default:
+	}
+
+	// TODO: it can be a bool argument too !
+	if s.CurrentToken() != tokens.STAR {
+		errors.Set(s.CurrentPos(), "init argument must be named")
+		skipTo(s, tokens.CBRAC)
+		return init
+	}
+
+	s.ConsumeTokenInfo()
+	ident := s.ConsumeTokenInfo()
+
+	if ident.Token() != tokens.IDENT {
+		errors.Set(s.CurrentPos(), "init argument must be named")
+		skipTo(s, tokens.CBRAC)
+		return init
+	}
+
+	if _, exists := init.Args[ident.Value().(string)]; exists {
+		errors.Set(s.CurrentPos(), "init argument already exists")
+		// continue
+	}
+
+	if s.CurrentToken() != tokens.COLON {
+
+	}
+
+	return ast.SimpleInitExpr{}
 }
 
 type initExpr struct {
 	interfaceInit Continuer[ast.Type, ast.InterfaceInitExpr]
+	simpleInit    Continuer[ast.Type, ast.SimpleInitExpr]
 	expr          ParserOf[ast.Expr]
 }
 
@@ -128,7 +192,7 @@ func (i initExpr) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors)
 	assert(s.CurrentToken().IsOneOf(tokens.COLON, tokens.OBRAC))
 
 	var (
-		init       = ast.ClassicInitExpr{Type: from}
+		init       = ast.SimpleInitExpr{Type: from}
 		tmpScanner = s.Clone()
 	)
 
