@@ -61,6 +61,16 @@ func (v ValueConverter[F, T]) Convert(from F) T {
 	return v.To
 }
 
+type ConvertParserOf[T1, T2 any] struct {
+	Converter Converter[T1, T2]
+}
+
+func (c ConvertParserOf[T1, T2]) Convert(from ParserOf[T1]) ParserOf[T2] {
+	return parserFuncFor[T2](func(scanner scan.Scanner, errors *Errors) T2 {
+		return c.Converter.Convert(from.Parse(scanner, errors))
+	})
+}
+
 type ContinuerCast[F, T1, T2 any] struct {
 	FromContinuer Continuer[F, T1]
 	Converter     Converter[T1, T2]
