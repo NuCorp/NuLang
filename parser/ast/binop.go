@@ -78,4 +78,4 @@ type BinopExpr struct {
 	Right Expr
 }
 
-func (BinopExpr) expr() {}
+func (b BinopExpr) AsExpr() Expr { return b }

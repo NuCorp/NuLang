@@ -7,5 +7,5 @@ type LiteralExpr interface {
 
 type IntExpr int
 
-func (i IntExpr) expr()             {}
+func (i IntExpr) AsExpr() Expr      { return i }
 func (i IntExpr) LiteralValue() any { return int(i) }

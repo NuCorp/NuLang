@@ -1,14 +1,14 @@
 package ast
 
 type Expr interface {
-	expr()
+	AsExpr() Expr
 }
 
-func (d DotIdent) expr() {}
+func (d DotIdent) AsExpr() Expr { return d }
 
 type TupleExpr []Expr
 
-func (t TupleExpr) expr() {}
+func (t TupleExpr) AsExpr() Expr { return t }
 
 type AsTypeExpr struct {
 	Forced bool
@@ -17,7 +17,7 @@ type AsTypeExpr struct {
 	AsType Type
 }
 
-func (AsTypeExpr) expr() {}
+func (a AsTypeExpr) AsExpr() Expr { return a }
 
 type IsTypeExpr struct {
 	Constexpr bool
@@ -25,11 +25,11 @@ type IsTypeExpr struct {
 	IsType    Type
 }
 
-func (IsTypeExpr) expr() {}
+func (i IsTypeExpr) AsExpr() Expr { return i }
 
 type AddressOf struct {
 	RealAddress bool
 	Expr        Expr
 }
 
-func (AddressOf) expr() {}
+func (a AddressOf) AsExpr() Expr { return a }

@@ -25,8 +25,8 @@ type InterfaceInitExpr struct {
 	Methods []FuncDef
 }
 
-func (InterfaceInitExpr) expr() {}
-func (InterfaceInitExpr) init() {}
+func (i InterfaceInitExpr) AsExpr() Expr { return i }
+func (InterfaceInitExpr) init()          {}
 
 type ThrowIndicator int
 
@@ -44,8 +44,8 @@ type SimpleInitExpr struct {
 	BoolArgs map[string]bool
 }
 
-func (SimpleInitExpr) expr() {}
-func (SimpleInitExpr) init() {}
+func (s SimpleInitExpr) AsExpr() Expr { return s }
+func (SimpleInitExpr) init()          {}
 
 type NamedInitExpr struct {
 	Type      Type
