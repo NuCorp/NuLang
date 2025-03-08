@@ -30,9 +30,9 @@ func (d defs) Parse(s scan.Scanner, errors *Errors) []ast.Def {
 	for !s.IsEnded() {
 		switch s.CurrentToken() {
 		case tokens.VAR:
-			defs = append(defs, slices.Map(d.vars.Parse(s, errors), convertor[ast.Var, ast.Def])...)
+			defs = append(defs, slices.Map(d.vars.Parse(s, errors), ast.Var.AsDef)...)
 		case tokens.CONST:
-			defs = append(defs, slices.Map(d.consts.Parse(s, errors), convertor[ast.Const, ast.Def])...)
+			defs = append(defs, slices.Map(d.consts.Parse(s, errors), ast.Const.AsDef)...)
 		case tokens.FUNC:
 			if !d.toplevel {
 				errors.Set(s.CurrentPos(), "named function must be declared in top level (package) scope; use const+ lambda instead")
