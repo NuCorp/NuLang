@@ -25,7 +25,8 @@ func (c Const) AsDef() Def { return c }
 
 type TypeDef struct {
 	Name      string
-	Type      Type
+	Type      Type // nil if Const is true
+	Const     bool
 	Extension Extension
 	// With []TypeWith
 }

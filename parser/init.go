@@ -176,15 +176,15 @@ func (i initExpr) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors)
 		"expected `:`, `{` or =>, but got %v", s.CurrentToken(),
 	)
 
-	if from.TypeID() == "type:interface" {
+	if from.AsType() == "type:interface" {
 		return i.interfaceInit.ContinueParsing(from, s, errors)
 	}
 
-	if from.TypeID() == "type:named" && s.CurrentToken() == tokens.ARROW {
+	if from.AsType() == "type:named" && s.CurrentToken() == tokens.ARROW {
 		return i.interfaceInit.ContinueParsing(from, s, errors)
 	}
 
-	if s.CurrentToken() == tokens.OBRAC && from.TypeID() == "type:named" && i.isInterfaceInit(s.Clone()) {
+	if s.CurrentToken() == tokens.OBRAC && from.AsType() == "type:named" && i.isInterfaceInit(s.Clone()) {
 		return i.interfaceInit.ContinueParsing(from, s, errors)
 	}
 

@@ -161,3 +161,11 @@ func (p structTypeParser) Parse(s scan.Scanner, errors *Errors) ast.StructType {
 
 	return structType
 }
+
+type typeDefParser struct {
+	typeParser ParserOf[ast.Type]
+}
+
+func (t typeDefParser) Parse(s scan.Scanner, errors *Errors) ast.StructType {
+
+}

@@ -5,7 +5,7 @@ import (
 )
 
 type Type interface {
-	TypeID() string
+	AsType() Type
 }
 
 type StructType struct {
@@ -14,14 +14,10 @@ type StructType struct {
 	DefaultValue map[string]Expr
 }
 
-func (s StructType) TypeID() string {
-	return "type:struct"
-}
+func (s StructType) AsType() Type { return s }
 
 type NamedType = DotIdent
 
-func (n NamedType) TypeID() string {
-	return "type:named"
-}
+func (n NamedType) AsType() Type { return n }
 
-func (FuncType) TypeID() string { return "type:func" }
+func (f FuncType) AsType() Type { return f }
