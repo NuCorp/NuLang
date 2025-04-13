@@ -90,19 +90,13 @@ type conditionalParser interface {
 	condition(s scan.Scanner) bool
 }
 
-func requires(s scan.Scanner, t1 tokens.Token, or ...tokens.Token) {
-	assert(s.CurrentToken().IsOneOf(append(or, t1)...))
-}
-
+// assert will panic if `cond` is false.
+// it is possible to specify a message. That message accepts fmt formating.
 func assert(cond bool, msgAndFmt ...any) {
 	var msg string
 
 	if len(msgAndFmt) > 0 {
-		if first, ok := msgAndFmt[0].(string); ok {
-			msg = ": " + fmt.Sprintf(first, msgAndFmt[1:]...)
-		} else {
-			msg = ": " + fmt.Sprint(msgAndFmt...)
-		}
+		msg = ": " + fmt.Sprintf(msgAndFmt[0].(string), msgAndFmt[1:]...)
 	}
 
 	if !cond {
