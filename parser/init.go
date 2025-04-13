@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"github.com/LicorneSharing/GTL/optional"
 	"github.com/NuCorp/NuLang/parser/ast"
 	"github.com/NuCorp/NuLang/scan"
 	"github.com/NuCorp/NuLang/scan/tokens"
@@ -27,7 +28,8 @@ TYPE => --> 4
 */
 
 type simpleInit struct {
-	expr ParserOf[ast.Expr]
+	expr           ParserOf[ast.Expr]
+	simpleInitArgs listOf[bracesSurrounding, simpleInitArg]
 }
 
 type knownErrorContinuer[F, T any] struct {
@@ -69,16 +71,96 @@ func (i initExpr) selectInit(s scan.SharedScanner) Continuer[ast.Type, ast.InitE
 	}
 }
 
+type simpleInitArgParser struct {
+	expr  ParserOf[ast.Expr]
+	named ParserOf[ast.NamedArgBinding]
+
+	asSelf bool
+}
+
+type simpleInitArg struct {
+	fromAs        ast.Expr
+	simpleInitArg *ast.SimpleInitArg
+}
+
+func (si *simpleInitArgParser) Parse(s scan.Scanner, errors *Errors) simpleInitArg {
+	if !si.asSelf && s.CurrentToken() != tokens.STAR {
+		si.asSelf = true
+		return simpleInitArg{
+			fromAs: si.expr.Parse(s, errors),
+		}
+	}
+
+	if s.CurrentToken() == tokens.STAR {
+		var (
+			destructured bool
+
+			arg = si.named.Parse(s, errors)
+		)
+
+		if s.CurrentToken() == tokens.ELLIPSIS {
+			destructured = true
+			s.ConsumeTokenInfo()
+		}
+
+		return simpleInitArg{
+			simpleInitArg: &ast.SimpleInitArg{
+				Name:         arg.Name,
+				Value:        arg.Expr,
+				Destructured: destructured,
+			},
+		}
+	}
+
+	const errorMsg = "should be IDENT (for bool value as true), !IDENT (bool value as false) or *IDENT (to set the argument by name)"
+
+	if !s.CurrentToken().IsOneOf(tokens.IDENT, tokens.NOT) {
+		errors.Set(s.CurrentPos(), errorMsg)
+
+		skipTo(s, tokens.COMMA, tokens.CBRAC, tokens.SEMI)
+		return simpleInitArg{}
+	}
+
+	arg := ast.SimpleInitArg{
+		Bool: optional.Some(s.CurrentToken() != tokens.NOT),
+	}
+
+	if tok := s.ConsumeTokenInfo(); tok.Token() == tokens.IDENT {
+		arg.Name = ast.DotIdent{tok.Value().(string)}
+	} else if tok := s.ConsumeTokenInfo(); tok.Token() == tokens.IDENT {
+		arg.Name = ast.DotIdent{tok.Value().(string)}
+	} else {
+		errors.Set(s.CurrentPos(), errorMsg)
+		skipTo(s, tokens.COMMA, tokens.CBRAC, tokens.SEMI)
+	}
+
+	return simpleInitArg{simpleInitArg: &arg}
+}
+
+/*
+| {}
+| {EXPR}
+| {EXPR, Left}
+
+Left:
+| ø
+| NameArgBinding
+| NameArgBindingDestructured
+| IDENT
+*/
+
 func (i simpleInit) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors) ast.SimpleInitExpr {
 	assert(s.CurrentToken().IsOneOf(tokens.OBRAC, tokens.NOT, tokens.ASK))
 
 	init := ast.SimpleInitExpr{Type: from}
 
-	switch s.ConsumeToken() {
+	switch s.CurrentToken() {
 	case tokens.NOT:
 		init.MayThrow = ast.MustThrow
+		s.CurrentTokenInfo()
 	case tokens.ASK:
 		init.MayThrow = ast.MayThrow
+		s.ConsumeTokenInfo()
 	default:
 	}
 
@@ -86,6 +168,27 @@ func (i simpleInit) ContinueParsing(from ast.Type, s scan.Scanner, errors *Error
 		errors.Set(s.CurrentPos(), "expected '{' to start an init expression")
 		return init
 	}
+
+	initArgs := i.simpleInitArgs.Parse(s, errors)
+
+	if len(initArgs) == 0 {
+		return init
+	}
+
+	if initArgs[0].fromAs != nil {
+		init.FromAs.Set(initArgs[0].fromAs)
+		initArgs = initArgs[1:]
+	}
+
+	if len(initArgs) > 0 {
+		init.Args = make(map[string]ast.SimpleInitArg, len(initArgs))
+	}
+
+	for _, initArg := range initArgs {
+		init.Args[initArg.simpleInitArg.Name.Pack()] = *initArg.simpleInitArg
+	}
+
+	return init
 
 	s.ConsumeTokenInfo()
 
@@ -170,7 +273,7 @@ func (i initExpr) isInterfaceInit(scanner scan.SharedScanner) bool {
 	return scanner.CurrentToken() == tokens.OPAREN // Type { Method?() ...
 }
 
-func (i initExpr) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors) ast.InitExpr {
+/*func (i initExpr) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors) ast.InitExpr {
 	assert(
 		s.CurrentToken().IsOneOf(tokens.COLON, tokens.OBRAC, tokens.ARROW),
 		"expected `:`, `{` or =>, but got %v", s.CurrentToken(),
@@ -221,3 +324,4 @@ func (i initExpr) ContinueParsing(from ast.Type, s scan.Scanner, errors *Errors)
 
 	return init
 }
+*/

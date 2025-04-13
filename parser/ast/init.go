@@ -36,12 +36,18 @@ const (
 	MustThrow
 )
 
+type SimpleInitArg struct {
+	Name         DotIdent
+	Value        Expr
+	Bool         optional.Value[bool]
+	Destructured bool
+}
+
 type SimpleInitExpr struct {
 	Type     Type
 	MayThrow ThrowIndicator
 	FromAs   optional.Value[Expr]
-	Args     map[string]Expr
-	BoolArgs map[string]bool
+	Args     map[string]SimpleInitArg
 }
 
 func (s SimpleInitExpr) AsExpr() Expr { return s }

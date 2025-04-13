@@ -12,6 +12,8 @@ const (
 
 type FakeTokenPos int
 
+func (f FakeTokenPos) Int() int { return int(f) }
+
 func (f FakeTokenPos) Col() int {
 	return int(f) % FakeLineLength
 }
