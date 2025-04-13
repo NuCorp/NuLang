@@ -167,5 +167,5 @@ type typeDefParser struct {
 }
 
 func (t typeDefParser) Parse(s scan.Scanner, errors *Errors) ast.StructType {
-
+	return ast.StructType{}
 }
