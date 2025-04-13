@@ -35,9 +35,60 @@ type ArgBinding struct {
 	// destructured ?
 }
 
+type ArgBindingElem interface {
+	GetExpr() Expr
+	IsNamed() bool
+	IsDestructured() bool
+}
+
+type OrderArgBinding struct {
+	Expr
+}
+
+func (o OrderArgBinding) GetExpr() Expr {
+	return o
+}
+
+func (o OrderArgBinding) IsNamed() bool {
+	return false
+}
+
+func (o OrderArgBinding) IsDestructured() bool {
+	return false
+}
+
+type NamedArgBinding struct {
+	Name DotIdent
+	Expr Expr // may be nil
+}
+
+func (n NamedArgBinding) GetExpr() Expr {
+	if n.Expr == nil {
+		return n.Name
+	}
+
+	return n.Expr
+}
+
+func (n NamedArgBinding) IsNamed() bool {
+	return true
+}
+
+func (n NamedArgBinding) IsDestructured() bool {
+	return false
+}
+
+type DestructuredArgBinding struct {
+	ArgBindingElem
+}
+
+func (d DestructuredArgBinding) IsDestructured() bool {
+	return true
+}
+
 type FuncCall struct {
 	From CallableFunc
-	Args ArgBinding
+	Args []ArgBindingElem
 }
 
 func (f FuncCall) AsExpr() Expr { return f }
