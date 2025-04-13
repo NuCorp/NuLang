@@ -178,6 +178,14 @@ func ForEach(forFunction func(token Token)) {
 	}
 }
 
+func Iter(yield func(string, Token) bool) {
+	for token, str := range tokenStr {
+		if !yield(str, token) {
+			return
+		}
+	}
+}
+
 func IsIdentifier(str string) bool {
 	matcher, err := regexp.Compile("_[A-Za-z0-9_]+|(__)?[A-Za-z]+[A-Za-z_0-9]*")
 	if err != nil {
