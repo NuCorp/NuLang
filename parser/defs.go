@@ -10,7 +10,10 @@ import (
 	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
-type defs struct {
+type defsParser struct {
+	defParser
+}
+type defParser struct {
 	toplevel bool
 
 	typedef      ParserOf[ast.TypeDef]
@@ -24,7 +27,7 @@ type defs struct {
 	dotIdent ParserOf[ast.DotIdent]
 }
 
-func (d defs) Parse(s scan.Scanner, errors *Errors) []ast.Def {
+func (d defsParser) Parse(s scan.Scanner, errors *Errors) []ast.Def {
 	var defs []ast.Def
 
 	for !s.IsEnded() {
@@ -68,7 +71,7 @@ func defParserOf[F ast.Def](p ParserOf[F]) ParserOf[ast.Def] {
 }
 
 // selectTypeParser can return either ParserOf[ast.TypeDef], ParserOf[ast.CastDef] or ParserOf[ast.ExtensionDef]
-func (d defs) selectTypeParser(s scan.SharedScanner, errors *Errors) ParserOf[ast.Def] {
+func (d defsParser) selectTypeParser(s scan.SharedScanner, errors *Errors) ParserOf[ast.Def] {
 	assert(s.ConsumeToken() == tokens.TYPE, "unexpected token %v", s.CurrentToken())
 
 	if s.CurrentToken() != tokens.IDENT {
