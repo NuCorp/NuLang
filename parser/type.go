@@ -166,6 +166,6 @@ type typeDefParser struct {
 	typeParser ParserOf[ast.Type]
 }
 
-func (t typeDefParser) Parse(s scan.Scanner, errors *Errors) ast.StructType {
-	return ast.StructType{}
+func (t typeDefParser) Parse(s scan.Scanner, errors *Errors) ast.TypeDef {
+	return ast.TypeDef{}
 }

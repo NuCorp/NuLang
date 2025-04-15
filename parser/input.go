@@ -84,11 +84,11 @@ type fileParser struct {
 	defs     ParserOf[[]ast.Def]
 }
 
-func NewFileParser(dot ParserOf[ast.DotIdent], imports ParserOf[[]ast.Import], defs ParserOf[[]ast.Def]) FileParser {
+func NewFileParser() FileParser {
 	return fileParser{
-		dotIdent: dot,
-		imports:  imports,
-		defs:     defs,
+		dotIdent: dotIdentParser{},
+		imports:  NewImport(),
+		defs:     NewDefParser(topLevelDef),
 	}
 }
 

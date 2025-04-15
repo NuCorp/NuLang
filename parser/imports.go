@@ -14,8 +14,10 @@ type imports struct {
 	grouped ParserOf[[]ast.Import]
 }
 
-func NewImport(dotParser ParserOf[ast.DotIdent]) ParserOf[[]ast.Import] {
+func NewImport() ParserOf[[]ast.Import] {
 	var (
+		dotParser = dotIdentParser{}
+
 		single = singleImport{
 			dotIdent: dotParser,
 		}

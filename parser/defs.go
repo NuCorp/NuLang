@@ -60,6 +60,65 @@ func (d defSelector) selectParser(s scan.SharedScanner, errors *Errors) ParserOf
 	return parser
 }
 
+const (
+	funcLevelDef = iota
+	typeLevelDef
+	topLevelDef
+)
+
+func NewDefParser(scopeLvl int) ParserOf[[]ast.Def] {
+	var (
+		dotIdent = dotIdentParser{}
+		typ      = NewTypeParser(false)
+		expr     = ParserOf[ast.Expr](nil) // TODO: NewExprParser(scopeLvl)
+
+		typeDef = typeDefParser{
+			typeParser: NewTypeParser(true),
+		}
+
+		vars = varDef{
+			groupedVar: groupedVar{
+				typeParser: typ,
+				expr:       expr,
+			},
+			bindingAssigned: NewBindingAssigned(false),
+		}
+		// consts
+		// func
+
+	)
+
+	switch scopeLvl {
+	case funcLevelDef:
+		return funcLevelDefParser{
+			vars:        vars,
+			definedVars: nil,
+			consts:      nil,
+
+			typedef: typeDef,
+			castdef: nil,
+
+			dotIdent: dotIdent,
+		}
+	case typeLevelDef:
+		return typeLevelDefParser{}
+	case topLevelDef:
+		return topLevelDefParser{
+			vars:   vars,
+			consts: nil,
+			funcs:  nil,
+
+			typeDef:      typeDef,
+			castDef:      nil,
+			extensionDef: nil,
+
+			dotIdent: dotIdent,
+		}
+	}
+
+	panic("invalid scope level (0, 1, 2) for (func, type, package)")
+}
+
 type topLevelDefParser struct {
 	vars   ParserOf[[]ast.Var]
 	consts ParserOf[[]ast.Const]

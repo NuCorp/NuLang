@@ -136,6 +136,37 @@ type bindingAssigned struct {
 	expr            ParserOf[ast.Expr]
 }
 
+func NewBindingAssigned(defined bool) ParserOf[ast.BindingAssign] {
+	var (
+		expr ParserOf[ast.Expr] = nil // TODO: NewExprParser()
+
+		subbinding   = new(subbindingParser)
+		orderBinding = orderBindingAssigned{
+			subbinding: subbinding,
+			expr:       expr,
+		}
+		nameBinding = nameBindingAssigned{
+			subbinding: subbinding,
+			expr:       expr,
+		}
+	)
+
+	subbinding.orderbindingAssign = orderBinding
+	subbinding.namebindingAssign = nameBinding
+
+	assignmentToken := tokens.ASSIGN
+
+	if defined {
+		assignmentToken = tokens.DEFINE
+	}
+
+	return bindingAssigned{
+		assignmentToken: assignmentToken,
+		subbinding:      subbinding,
+		expr:            expr,
+	}
+}
+
 func (b bindingAssigned) Parse(s scan.Scanner, errors *Errors) ast.BindingAssign {
 	assert(s.CurrentToken() == tokens.STAR || s.CurrentToken() == tokens.STAR)
 	var (
