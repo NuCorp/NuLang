@@ -10,7 +10,7 @@ import (
 	"github.com/NuCorp/NuLang/scan/tokens"
 )
 
-func defParserOf[F ast.Def](p ParserOf[F]) ParserOf[ast.Def] {
+func asDefParser[F ast.Def](p ParserOf[F]) ParserOf[ast.Def] {
 	if p == nil {
 		return nil
 	}
@@ -137,9 +137,9 @@ func (d topLevelDefParser) Parse(s scan.Scanner, errors *Errors) []ast.Def {
 
 		typeSelector = defSelector{
 			tokenSelection: map[tokens.Token]ParserOf[ast.Def]{
-				tokens.ASSIGN:      defParserOf(d.typeDef),
-				tokens.PLUS_ASSIGN: defParserOf(d.extensionDef),
-				tokens.AS:          defParserOf(d.castDef),
+				tokens.ASSIGN:      asDefParser(d.typeDef),
+				tokens.PLUS_ASSIGN: asDefParser(d.extensionDef),
+				tokens.AS:          asDefParser(d.castDef),
 			},
 
 			dotIdent: d.dotIdent,

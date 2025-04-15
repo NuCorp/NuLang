@@ -8,30 +8,38 @@ import (
 
 type expr struct {
 	literal ParserOf[ast.LiteralExpr]
-	ident   ParserOf[ast.DotIdent]
-	tuple   ParserOf[ast.TupleExpr]
-	typing  ParserOf[ast.Type]
 
+	ident ParserOf[ast.DotIdent]
+
+	tuple ParserOf[ast.TupleExpr]
 	// arr ParserOf[ast.ArrayExpr]
-	// funcExpr ParserOf[ast.FuncExpr]
 	// structExpr ParserOf[ast.StructExpr]
-	// interfaceExpr ParserOf[ast.InterfaceExpr]
-	// TypeExpr ParserOf[ast.TypeExpr] // Type[.] or Type{Of:.} or Type{Of+:.}
+	// funcExpr ParserOf[ast.FuncExpr]
 	// ifExpr ParserOf[ast.IfExpr]
 	// forExpr ParserOf[ast.ForExpr]
 	// tryExpr ParserOf[ast.TryExpr]
+	// interfaceExpr ParserOf[ast.InterfaceExpr]
+	// TypeExpr ParserOf[ast.TypeExpr] // Type[.] or Type{Of:.} or Type{Of+:.}
 
 	initExpr     Continuer[ast.DotIdent, ast.InitExpr]
 	functionCall Continuer[ast.DotIdent, ast.FuncCall]
-	asExpr       Continuer[ast.Expr, ast.AsTypeExpr]
-	isExpr       Continuer[ast.Expr, ast.IsTypeExpr]
-	binopExpr    Continuer[ast.Expr, ast.BinopExpr] // may be nil
+
+	asExpr Continuer[ast.Expr, ast.AsTypeExpr]
+	isExpr Continuer[ast.Expr, ast.IsTypeExpr]
+
+	binopExpr Continuer[ast.Expr, ast.BinopExpr] // may be nil
+
+	typing ParserOf[ast.Type]
 }
 
-func toParserOfExpr[F ast.Expr](p ParserOf[F]) ParserOf[ast.Expr] {
-	return parserFuncFor[ast.Expr](func(scanner scan.Scanner, errors *Errors) ast.Expr {
-		return p.Parse(scanner, errors)
-	})
+func asExprParser[F ast.Expr](p ParserOf[F]) ParserOf[ast.Expr] {
+	if p == nil {
+		return nil
+	}
+
+	return ConvertParserOf[F, ast.Expr]{
+		Converter: ConverterFunc[F, ast.Expr](F.AsExpr),
+	}.Convert(p)
 }
 
 func (e expr) lookupIdent(s scan.Scanner, errors *Errors) ParserOf[ast.Expr] {
@@ -42,9 +50,9 @@ func (e expr) lookupIdent(s scan.Scanner, errors *Errors) ParserOf[ast.Expr] {
 
 	switch scanner.CurrentToken() {
 	case tokens.OBRAC, tokens.COLON:
-		return toParserOfExpr(continuerToParser(ident, e.initExpr))
+		return asExprParser(continuerToParser(ident, e.initExpr))
 	case tokens.OPAREN:
-		return toParserOfExpr(continuerToParser(ident, e.functionCall))
+		return asExprParser(continuerToParser(ident, e.functionCall))
 	}
 
 	return parserFuncFor[ast.Expr](func(_ scan.Scanner, _ *Errors) ast.Expr {
@@ -79,7 +87,7 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 			}
 
 			ref.Expr = e.ident.Parse(s, errors)
-
+			expr = ref
 		case s.CurrentToken().IsLiteral():
 			expr = e.literal.Parse(s, errors)
 		case s.CurrentToken() == tokens.IDENT:
