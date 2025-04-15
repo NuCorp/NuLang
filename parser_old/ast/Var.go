@@ -98,7 +98,8 @@ func (i InvalidBindingElement) String() string {
 	return "INVALID"
 }
 func (i InvalidBindingElement) CodePos() scan.TokenPos {
-	return scan.TokenPos{}
+	//return scan.TokenPos{}
+	panic("old code")
 }
 
 type SubBinding interface {

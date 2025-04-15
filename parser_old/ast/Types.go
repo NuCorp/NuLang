@@ -71,7 +71,7 @@ type DotType struct {
 }
 
 func (d DotType) String() string {
-	return strings.Join(slices.Map(d.Idents, Ident.String), ".")
+	return strings.Join(slices.MapRef(d.Idents, (*Ident).String), ".")
 }
 
 type StructType struct {

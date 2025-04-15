@@ -37,7 +37,7 @@ func ParseFunctionDecl(s scan.Scanner, errors Errors) ast.FuncDecl {
 
 	funcDecl.Param, funcDecl.Variadic = parseFuncParameters(s, errors)
 
-	funcDecl.ReturnType = nil // TODO: parseTypeExpr(s, errors)
+	// funcDecl.ReturnType = nil // TODO: parseTypeExpr(s, errors)
 
 	funcDecl.Body.Body = nil // TODO: funcDecl.Body = parseScope(s, errors, &scope{Element: &funcDecl})
 

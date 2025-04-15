@@ -26,7 +26,7 @@ func ParseVarDecl(s scan.Scanner, errors Errors) ast.VarList {
 				break
 			}
 			id := ident(s.ConsumeTokenInfo())
-			var typ_ ast.TypeExpr = nil // parseType(s, errors)
+			var typ_ ast.TypeExpr // = nil // parseType(s, errors)
 			if s.CurrentToken() == tokens.ASSIGN {
 				varList.Vars = append(varList.Vars, &ast.AssignedVar{
 					Name:     &id,
