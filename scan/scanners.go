@@ -115,7 +115,7 @@ func (c *common[T]) LookUp(how int) CodeToken {
 
 	codeToken[0] = c.ConsumeTokenInfo()
 
-	for len(codeToken) != cap(codeToken) || how == 0 {
+	for len(codeToken) != cap(codeToken) || how == 0 && c.CurrentToken() != tokens.EOF {
 		codeToken = append(codeToken, c.ConsumeTokenInfo())
 	}
 	return codeToken

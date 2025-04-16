@@ -7,6 +7,7 @@ import (
 	tassert "github.com/stretchr/testify/assert"
 
 	"github.com/NuCorp/NuLang/scan/tokens"
+	"github.com/NuCorp/NuLang/utils/slicesutil"
 
 	"github.com/LicorneSharing/GTL/slices"
 )
@@ -14,6 +15,7 @@ import (
 func TestCodeLiterals(t *testing.T) {
 	run := func(code, expected string, tokenList ...tokens.Token) func(t *testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			defer func() {
 				if err := recover(); err != nil {
 					t.Errorf("initial value %v; expected: %v; got panic:", code, expected)
@@ -23,18 +25,17 @@ func TestCodeLiterals(t *testing.T) {
 			scanner := Code(code)
 			scanCode := scanner.LookUp(-1)
 			got := scanCode.String()
-			if got != expected {
-				t.Errorf("initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
-			}
-			if tokenList != nil {
-				for i, token := range scanCode.TokenList() {
-					if i >= len(tokenList) {
-						t.Errorf("Got more element that it should be\nexpected: %v\n got: %v", tokenList, scanCode.TokenList())
-					} else if tokenList[i] != token {
-						t.Errorf("invalid token\ngot: %v\nexpected: %v\ndiff at %v: %v -> %v", scanCode.TokenList(), tokenList, i, token, tokenList[i])
-					}
-				}
-			}
+			tassert.Equal(t, expected, got, "initial value: %v\ngot: %v\nexpected: %v", code, got, expected)
+			tassert.Equal(t, tokenList, scanCode.TokenList())
+			//if tokenList != nil {
+			//	for i, token := range scanCode.TokenList() {
+			//		if i >= len(tokenList) {
+			//			t.Errorf("Got more element that it should be\nexpected: %v\n got: %v", tokenList, scanCode.TokenList())
+			//		} else if tokenList[i] != token {
+			//			t.Errorf("invalid token\ngot: %v\nexpected: %v\ndiff at %v: %v -> %v", scanCode.TokenList(), tokenList, i, token, tokenList[i])
+			//		}
+			//	}
+			//}
 		}
 	}
 
@@ -122,6 +123,7 @@ func TestCodeLiterals(t *testing.T) {
 func TestCodeOperators(t *testing.T) {
 	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			defer func() {
 				if err := recover(); err != nil {
 					t.Error(err)
@@ -129,15 +131,12 @@ func TestCodeOperators(t *testing.T) {
 			}()
 			//expectedTokens = append(expectedTokens)
 			scanner := Code(code)
-			got := scanner.LookUp(-1)
-			if len(got.TokenList()) != len(expectedTokens) {
-				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got), expectedTokens, got.TokenList())
-			}
-			for idx, expectedToken := range expectedTokens {
-				if expectedToken != got[idx].Token() {
-					t.Errorf("wrong token at %v (n°%v) expected: %v but got %v", got[idx].FromPos(), idx+1, expectedToken, got[idx].Token())
-				}
-			}
+			got := scanner.LookUp(len(expectedTokens) - 1)
+			tassert.Equal(
+				t,
+				slicesutil.Map(expectedTokens, tokens.Token.String),
+				slicesutil.Map(got.TokenList(), tokens.Token.String),
+			)
 		}
 	}
 
@@ -160,6 +159,7 @@ func TestCodeOperators(t *testing.T) {
 func TestCodeText(t *testing.T) {
 	run := func(code string, expectedTokens ...tokens.Token) func(t2 *testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			defer func() {
 				if err := recover(); err != nil {
 					t.Error(err)
@@ -167,15 +167,13 @@ func TestCodeText(t *testing.T) {
 			}()
 
 			scanner := Code(code)
-			got := scanner.LookUp(-1)
-			if len(got.TokenList()) != len(expectedTokens) {
-				t.Fatalf("expected %v element but got %v\nexpectedTokens: %v\ngot: %v", len(expectedTokens), len(got.TokenList()), expectedTokens, got.TokenList())
-			}
-			for idx, expectedToken := range expectedTokens {
-				if expectedToken != got[idx].Token() {
-					t.Errorf("wrong token at %v (n°%v) expected: %v but got %v", got[idx].FromPos(), idx+1, expectedToken, got[idx].Token())
-				}
-			}
+			got := scanner.LookUp(len(expectedTokens) - 1)
+
+			tassert.Equal(
+				t,
+				slicesutil.Map(expectedTokens, tokens.Token.String),
+				slicesutil.Map(got.TokenList(), tokens.Token.String),
+			)
 		}
 	}
 
@@ -194,10 +192,20 @@ func TestCodeText(t *testing.T) {
 	})
 
 	t.Run("random keywords", func(t *testing.T) {
-		for i := 0; i < 10; i++ {
-			idx := rand.Int() % len(keywordTokens)
-			token := keywordTokens[idx]
-			t.Logf("[%v/10] testing token: %v", i+1, token)
+		const tokenNb = 20
+		tested := make(map[tokens.Token]struct{}, tokenNb)
+		for i := range tokenNb {
+			var token tokens.Token
+			for {
+				idx := rand.Int() % len(keywordTokens)
+				token = keywordTokens[idx]
+
+				_, ok := tested[token]
+				if !ok {
+					break
+				}
+			}
+			t.Logf("[%v/%v] testing token: %v", i+1, tokenNb, token)
 			run(token.String(), token)
 		}
 	})
