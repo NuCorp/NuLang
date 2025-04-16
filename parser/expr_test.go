@@ -3,6 +3,8 @@ package parser
 import (
 	"testing"
 
+	tassert "github.com/stretchr/testify/assert"
+
 	"github.com/NuCorp/NuLang/parser/ast"
 	"github.com/NuCorp/NuLang/scan"
 )
@@ -86,6 +88,45 @@ func Test_tupleExpr_Parse(t1 *testing.T) {
 	for _, tt := range testcases {
 		t1.Run(tt.name, func(t1 *testing.T) {
 
+		})
+	}
+}
+
+func Test_arrayExpr_Parse(t *testing.T) {
+	type testcase struct {
+		name string
+
+		scanner    fakeScanner
+		exprParser ParserOf[ast.Expr]
+
+		wantArray  ast.ArrayExpr
+		wantErrors Errors
+	}
+
+	for _, tt := range []testcase{
+		{
+			name: "empty array",
+			scanner: fakeScanner{
+				tokens: []fakeScannerElem{
+					token("["), token("]"),
+				},
+			},
+			exprParser: parserFuncFor[ast.Expr](func(scan.Scanner, *Errors) ast.Expr {
+				t.Helper()
+				t.Fatalf("should not reach here")
+				return nil
+			}),
+			wantArray: ast.ArrayExpr(nil),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var (
+				errors Errors
+				got    = arrayExpr{expr: tt.exprParser}.Parse(&tt.scanner, &errors)
+			)
+
+			tassert.Equal(t, tt.wantArray, got)
+			tassert.Equal(t, tt.wantErrors, errors)
 		})
 	}
 }

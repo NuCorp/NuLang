@@ -120,6 +120,18 @@ func (t tupleExpr) Parse(s scan.Scanner, errors *Errors) ast.TupleExpr {
 	}.Parse(s, errors)
 }
 
+type arrayExpr struct {
+	expr ParserOf[ast.Expr]
+}
+
+func (a arrayExpr) Parse(s scan.Scanner, errors *Errors) ast.ArrayExpr {
+	assert(s.CurrentToken() == tokens.OBRAK)
+
+	return listOf[bracketSurrounding, ast.Expr]{
+		parser: a.expr,
+	}.Parse(s, errors)
+}
+
 type asExpr struct {
 	typing ParserOf[ast.Type]
 }

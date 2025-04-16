@@ -10,6 +10,10 @@ type TupleExpr []Expr
 
 func (t TupleExpr) AsExpr() Expr { return t }
 
+type ArrayExpr []Expr
+
+func (a ArrayExpr) AsExpr() Expr { return a }
+
 type AsTypeExpr struct {
 	Forced bool
 	Asked  bool
