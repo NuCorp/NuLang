@@ -1,12 +1,14 @@
 package parser
 
 import (
+	"testing"
+
 	"github.com/LicorneSharing/GTL/optional"
+	tassert "github.com/stretchr/testify/assert"
+
 	"github.com/NuCorp/NuLang/parser/ast"
 	"github.com/NuCorp/NuLang/scan"
 	"github.com/NuCorp/NuLang/scan/tokens"
-	tassert "github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type fakeScannerElem struct {
@@ -218,7 +220,7 @@ func Test_simpleInit_ContinueParsing(t *testing.T) {
 		from           ast.Type
 		scanner        *fakeScanner
 		withExprParser ParserOf[ast.Expr]
-		withNameParser ParserOf[ast.NamedArgBinding]
+		withNameParser ParserOf[ast.NamedContainedElem]
 
 		wantInit ast.SimpleInitExpr
 		wantErrs Errors
@@ -239,8 +241,8 @@ func Test_simpleInit_ContinueParsing(t *testing.T) {
 			withExprParser: parserFuncFor[ast.Expr](func(scanner scan.Scanner, errors *Errors) ast.Expr {
 				return ast.IntExpr(scanner.ConsumeTokenInfo().Value().(scan.Int))
 			}),
-			withNameParser: &fakeParser[ast.NamedArgBinding]{
-				values: []ast.NamedArgBinding{
+			withNameParser: &fakeParser[ast.NamedContainedElem]{
+				values: []ast.NamedContainedElem{
 					{
 						Name: ast.DotIdent{"Value"},
 					},
