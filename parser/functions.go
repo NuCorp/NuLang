@@ -7,16 +7,16 @@ import (
 )
 
 type argParser struct {
-	ordered ParserOf[ast.OrderArgBinding]
-	named   ParserOf[ast.NamedArgBinding]
+	ordered ParserOf[*ast.OrderedArgElem]
+	named   ParserOf[*ast.NamedArgElem]
 }
 
 type orderedArgParser struct {
 	expr ParserOf[ast.Expr]
 }
 
-func (o orderedArgParser) Parse(s scan.Scanner, errors *Errors) ast.OrderArgBinding {
-	return ast.OrderArgBinding{}
+func (o orderedArgParser) Parse(s scan.Scanner, errors *Errors) ast.ArgElem {
+	return ast.ArgElem{}
 }
 
 type namedArgParser struct {
@@ -24,23 +24,23 @@ type namedArgParser struct {
 	ident ParserOf[ast.DotIdent]
 }
 
-func (n namedArgParser) Parse(s scan.Scanner, errors *Errors) ast.NamedArgBinding {
-	return ast.NamedArgBinding{}
+func (n namedArgParser) Parse(s scan.Scanner, errors *Errors) ast.NamedContainedElem {
+	return ast.NamedContainedElem{}
 }
 
-func (a argParser) Parse(s scan.Scanner, errors *Errors) ast.ArgBindingElem {
-	var arg ast.ArgBindingElem
+func (a argParser) Parse(s scan.Scanner, errors *Errors) ast.ArgElem {
+	var arg ast.ArgElem
 
 	if s.CurrentToken() == tokens.STAR {
-		arg = a.named.Parse(s, errors)
+		arg.Named = a.named.Parse(s, errors)
 	} else {
-		arg = a.ordered.Parse(s, errors)
+		arg.Ordered = a.ordered.Parse(s, errors)
 	}
 
 	if s.CurrentToken() == tokens.ELLIPSIS {
 		s.ConsumeTokenInfo()
-		arg = ast.DestructuredArgBinding{
-			ArgBindingElem: arg,
+		arg.Destructured = &ast.DestructuredArgElem{
+			ContainedElem: arg.Get(),
 		}
 	}
 
@@ -48,7 +48,7 @@ func (a argParser) Parse(s scan.Scanner, errors *Errors) ast.ArgBindingElem {
 }
 
 type functionCallParser struct {
-	args listOf[parenthesesSurrounding, ast.ArgBindingElem]
+	args listOf[parenthesesSurrounding, ast.ArgElem]
 }
 
 func (f functionCallParser) ContinueParsing(from ast.CallableFunc, s scan.Scanner, errors *Errors) ast.FuncCall {

@@ -109,27 +109,124 @@ func (e expr) Parse(s scan.Scanner, errors *Errors) ast.Expr {
 }
 
 type tupleExpr struct {
-	expr ParserOf[ast.Expr]
+	expr ParserOf[ast.ListElem]
+}
+
+func extractSubTuple(t []ast.ListElem) ast.TupleExpr {
+	tuple := make(ast.TupleExpr, 0, len(t))
+
+	for _, elem := range t {
+		if elem, ok := elem.Lookup(); ok {
+			if t, ok := elem.GetExpr().(ast.TupleExpr); ok {
+				tuple = append(tuple, extractSubTuple(t)...)
+			} else {
+				var listElem ast.ListElem
+				listElem.Set(elem)
+				tuple = append(tuple, listElem)
+			}
+		}
+	}
+
+	return tuple
 }
 
 func (t tupleExpr) Parse(s scan.Scanner, errors *Errors) ast.TupleExpr {
-	assert(s.ConsumeToken() == tokens.OPAREN)
+	assert(s.CurrentToken() == tokens.OPAREN)
 
-	return listOf[parenthesesSurrounding, ast.Expr]{
-		parser: t.expr,
-	}.Parse(s, errors)
+	return extractSubTuple(
+		listOf[parenthesesSurrounding, ast.ListElem]{
+			parser: t.expr,
+		}.Parse(s, errors),
+	)
 }
 
 type arrayExpr struct {
-	expr ParserOf[ast.Expr]
+	expr ParserOf[ast.ListElem]
 }
 
 func (a arrayExpr) Parse(s scan.Scanner, errors *Errors) ast.ArrayExpr {
 	assert(s.CurrentToken() == tokens.OBRAK)
 
-	return listOf[bracketSurrounding, ast.Expr]{
+	return listOf[bracketSurrounding, ast.ListElem]{
 		parser: a.expr,
 	}.Parse(s, errors)
+}
+
+type dictExpr struct {
+	expr  ParserOf[ast.Expr]
+	ident ParserOf[ast.DotIdent]
+}
+
+func (d dictExpr) parseKey(s scan.Scanner, errors *Errors) (ast.Expr, bool) {
+	if s.CurrentToken() == tokens.STAR {
+		s.ConsumeTokenInfo()
+		id := d.ident.Parse(s, errors)
+
+		return id, len(id) == 1
+	}
+
+	return d.expr.Parse(s, errors), false
+}
+
+type dictKeyval struct {
+	Key          ast.Expr
+	Value        ast.Expr
+	Destructured bool
+}
+
+func (d dictExpr) parseKeyVal(s scan.Scanner, errors *Errors) dictKeyval {
+	var keyval dictKeyval
+	if s.CurrentToken() == tokens.STAR {
+		s.ConsumeTokenInfo()
+		key := d.ident.Parse(s, errors)
+
+		keyval.Key = ast.StringExpr(key.Last())
+		keyval.Value = key
+
+		if s.CurrentToken() == tokens.ELLIPSIS {
+			keyval.Destructured = true
+			return keyval
+		}
+	} else {
+		keyval.Key = d.expr.Parse(s, errors)
+	}
+
+	if keyval.Value == nil && s.CurrentToken() != tokens.COLON {
+		errors.Set(s.CurrentPos(), "expected `:` to match a value to a key")
+		return keyval
+	}
+
+	if s.CurrentToken() == tokens.COLON {
+		s.ConsumeTokenInfo()
+		keyval.Value = d.expr.Parse(s, errors)
+	}
+
+	return keyval
+}
+
+func (d dictExpr) Parse(s scan.Scanner, errors *Errors) ast.DictExpr {
+	assert(s.CurrentToken() == tokens.OBRAK, "expected `[` but got `%v`", s.CurrentToken())
+
+	var (
+		keyvals = listOf[bracketSurrounding, dictKeyval]{
+			parser: parserFuncFor[dictKeyval](d.parseKeyVal),
+		}.Parse(s, errors)
+
+		dict = ast.DictExpr{
+			Values: make(map[int]ast.Expr),
+		}
+	)
+
+	for i, elem := range keyvals {
+		dict.Keys = append(dict.Keys, elem.Key)
+		dict.Values[i] = elem.Value
+
+		if elem.Destructured {
+			dict.Destructured.SafeInsert(i)
+		}
+	}
+
+	return dict
 }
 
 type asExpr struct {

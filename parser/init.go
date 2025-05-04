@@ -73,7 +73,7 @@ func (i initExpr) selectInit(s scan.SharedScanner) Continuer[ast.Type, ast.InitE
 
 type simpleInitArgParser struct {
 	expr  ParserOf[ast.Expr]
-	named ParserOf[ast.NamedArgBinding]
+	named ParserOf[ast.NamedContainedElem]
 
 	asSelf bool
 }
