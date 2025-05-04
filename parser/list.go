@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+
 	"github.com/NuCorp/NuLang/scan"
 	"github.com/NuCorp/NuLang/scan/tokens"
 )
@@ -53,7 +54,7 @@ func (l listOf[S, T]) closingToken() tokens.Token {
 }
 
 func (l listOf[S, T]) Parse(s scan.Scanner, errors *Errors) []T {
-	assert(s.ConsumeToken() == l.openingToken())
+	assert(s.ConsumeToken() == l.openingToken(), "expected token %v", l.openingToken())
 
 	var list []T
 
