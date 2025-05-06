@@ -60,13 +60,7 @@ func (d defSelector) selectParser(s scan.SharedScanner, errors *Errors) ParserOf
 	return parser
 }
 
-const (
-	funcLevelDef = iota
-	typeLevelDef
-	topLevelDef
-)
-
-func NewDefParser(scopeLvl int) ParserOf[[]ast.Def] {
+func NewDefParser() ParserOf[[]ast.Def] {
 	var (
 		dotIdent = dotIdentParser{}
 		typ      = NewTypeParser(false)
@@ -86,43 +80,25 @@ func NewDefParser(scopeLvl int) ParserOf[[]ast.Def] {
 		// consts
 		// func
 
-	)
-
-	switch scopeLvl {
-	case funcLevelDef:
-		return funcLevelDefParser{
-			vars:        vars,
-			definedVars: nil,
-			consts:      nil,
-
-			typedef: typeDef,
-			castdef: nil,
-
-			dotIdent: dotIdent,
-		}
-	case typeLevelDef:
-		return typeLevelDefParser{}
-	case topLevelDef:
-		return topLevelDefParser{
-			vars:   vars,
-			consts: nil,
-			funcs:  nil,
-
+		defs = defParser{
+			vars:         vars,
+			consts:       nil,
+			function:     nil,
 			typeDef:      typeDef,
 			castDef:      nil,
 			extensionDef: nil,
-
-			dotIdent: dotIdent,
+			dotIdent:     dotIdent,
 		}
-	}
+	)
 
-	panic("invalid scope level (0, 1, 2) for (func, type, package)")
+	return defs
 }
 
-type topLevelDefParser struct {
-	vars   ParserOf[[]ast.Var]
-	consts ParserOf[[]ast.Const]
-	funcs  ParserOf[ast.FuncDef]
+type defParser struct {
+	vars     ParserOf[[]ast.Var]
+	consts   ParserOf[[]ast.Const]
+	function ParserOf[ast.FuncDef]
+	// defined
 
 	typeDef      ParserOf[ast.TypeDef]
 	castDef      ParserOf[ast.CastDef]
@@ -131,7 +107,7 @@ type topLevelDefParser struct {
 	dotIdent ParserOf[ast.DotIdent]
 }
 
-func (d topLevelDefParser) Parse(s scan.Scanner, errors *Errors) []ast.Def {
+func (d defParser) Parse(s scan.Scanner, errors *Errors) []ast.Def {
 	var (
 		defs []ast.Def
 
@@ -153,7 +129,7 @@ func (d topLevelDefParser) Parse(s scan.Scanner, errors *Errors) []ast.Def {
 		case tokens.CONST:
 			defs = append(defs, slices.Map(d.consts.Parse(s, errors), ast.Const.AsDef)...)
 		case tokens.FUNC:
-			defs = append(defs, d.funcs.Parse(s, errors))
+			defs = append(defs, d.function.Parse(s, errors))
 		case tokens.TYPE:
 			parser := typeSelector.selectParser(s.Clone(), errors)
 
@@ -163,31 +139,11 @@ func (d topLevelDefParser) Parse(s scan.Scanner, errors *Errors) []ast.Def {
 
 			defs = append(defs, parser.Parse(s, errors))
 		default:
-			// error
+			return defs
 		}
 
 		ignoreEoI(s)
 	}
 
 	return defs
-}
-
-type typeLevelDefParser struct{}
-
-func (d typeLevelDefParser) Parse(s scan.Scanner, errors *Errors) []ast.Def {
-	panic("implement me")
-}
-
-type funcLevelDefParser struct {
-	typedef     ParserOf[ast.TypeDef]
-	castdef     ParserOf[ast.CastDef]
-	vars        ParserOf[[]ast.Var]
-	consts      ParserOf[[]ast.Const]
-	definedVars ParserOf[[]ast.Var]
-
-	dotIdent ParserOf[ast.DotIdent]
-}
-
-func (d funcLevelDefParser) Parse(s scan.Scanner, errors *Errors) []ast.Def {
-	panic("implement me")
 }
