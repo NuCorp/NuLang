@@ -3,6 +3,7 @@ package ast
 import "github.com/LicorneSharing/GTL/optional"
 
 type Def interface {
+	Stmt
 	AsDef() Def
 }
 
@@ -12,7 +13,8 @@ type Var struct {
 	Value Expr
 }
 
-func (v Var) AsDef() Def { return v }
+func (v Var) AsDef() Def   { return v }
+func (v Var) AsStmt() Stmt { return v }
 
 type Const struct {
 	IsConstexpr bool
@@ -21,7 +23,8 @@ type Const struct {
 	Value       Expr
 }
 
-func (c Const) AsDef() Def { return c }
+func (c Const) AsDef() Def   { return c }
+func (c Const) AsStmt() Stmt { return c }
 
 type TypeDef struct {
 	Name      string
@@ -31,7 +34,8 @@ type TypeDef struct {
 	// With []TypeWith
 }
 
-func (t TypeDef) AsDef() Def { return t }
+func (t TypeDef) AsDef() Def   { return t }
+func (t TypeDef) AsStmt() Stmt { return t }
 
 type Extension struct{}
 
@@ -40,7 +44,8 @@ type ExtensionDef struct {
 	Extension Extension
 }
 
-func (e ExtensionDef) AsDef() Def { return e }
+func (e ExtensionDef) AsDef() Def   { return e }
+func (e ExtensionDef) AsStmt() Stmt { return e }
 
 type CastKind int
 
@@ -57,6 +62,8 @@ type CastDef struct {
 	Body     optional.Value[any]
 }
 
-func (c CastDef) AsDef() Def { return c }
+func (c CastDef) AsDef() Def   { return c }
+func (c CastDef) AsStmt() Stmt { return c }
 
-func (f FuncDef) AsDef() Def { return f }
+func (f FuncDef) AsDef() Def   { return f }
+func (f FuncDef) AsStmt() Stmt { return f }

@@ -43,3 +43,4 @@ type FuncCall struct {
 }
 
 func (f FuncCall) AsExpr() Expr { return f }
+func (f FuncCall) AsStmt() Stmt { return f }
