@@ -70,3 +70,45 @@ func Test_structTypeParser_Parse(t *testing.T) {
 		})
 	}
 }
+
+func Test_funcTypeParser_Parse(t *testing.T) {
+	testcases := []struct {
+		name         string
+		scanner      *fakeScanner
+		inFuncDef    bool
+		typeParser   TryParserOf[ast.Type]
+		argParser    ParserOf[ast.Argument]
+		wantFuncType ast.FuncType
+		wantErrors   Errors
+	}{
+		{
+			name: "empty arg lambda type no return",
+			scanner: &fakeScanner{
+				tokens: []fakeScannerElem{
+					token("func"), token("("), token(")"),
+				},
+			},
+			typeParser: tryParserFuncFor[ast.Type](func(_ scan.SharedScanner, _ *Errors) (ast.Type, bool) {
+				return nil, false
+			}),
+			wantFuncType: ast.FuncType{},
+			wantErrors:   Errors{},
+		},
+	}
+
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			var (
+				errors = Errors{}
+				got    = funcTypeParser{
+					inFuncDef: tt.inFuncDef,
+					typ:       tt.typeParser,
+					arg:       tt.argParser,
+				}.Parse(tt.scanner, &errors)
+			)
+
+			tassert.Equal(t, tt.wantFuncType, got)
+			tassert.Equal(t, tt.wantErrors, errors)
+		})
+	}
+}
