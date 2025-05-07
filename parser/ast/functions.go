@@ -6,17 +6,23 @@ type CallableFunc interface {
 	FuncID() string
 }
 
+type Argument struct {
+	Name         string
+	Type         Type
+	DefaultValue Expr // nil if IsVariadic is true
+	IsNamed      bool
+	IsVariadic   bool
+}
+
 type FuncType struct {
-	Arguments   []Type
-	NamedArgs   map[int]string
-	VariadicArg optional.Value[int]
-	ReturnType  Type
+	Arguments  []Argument
+	ReturnType Type
 }
 
 type FuncDef struct {
-	Name   string
+	Name   optional.Value[string]
 	Header FuncType
-	Body   any
+	Body   Scope
 }
 
 type FuncExpr struct {
