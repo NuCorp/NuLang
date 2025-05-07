@@ -60,3 +60,34 @@ func (f functionCallParser) ContinueParsing(from ast.CallableFunc, s scan.Scanne
 
 	return call
 }
+
+type functionDefParser struct {
+	isLambda bool
+	header   ParserOf[ast.FuncType]
+	body     ParserOf[ast.Scope]
+}
+
+func (f functionDefParser) Parse(s scan.Scanner, errors *Errors) ast.FuncDef {
+	assert(s.ConsumeToken() == tokens.FUNC)
+
+	var funcDef ast.FuncDef
+
+	switch {
+	case !f.isLambda && s.CurrentToken() == tokens.IDENT:
+		funcDef.Name.Set(s.ConsumeTokenInfo().Value().(string))
+	case !f.isLambda:
+		errors.Set(s.CurrentPos(), "missing function name")
+		skipTo(s, tokens.OPAREN, tokens.SEMI)
+
+		if s.CurrentToken() == tokens.SEMI {
+			return ast.FuncDef{}
+		}
+	default:
+		// f.isLambda
+	}
+
+	funcDef.Header = f.header.Parse(s, errors)
+	funcDef.Body = f.body.Parse(s, errors)
+
+	return funcDef
+}
