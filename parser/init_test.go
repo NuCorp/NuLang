@@ -90,6 +90,19 @@ type fakeScanner struct {
 	tokens []fakeScannerElem
 }
 
+type fakeScannerCloned struct {
+	fakeScanner
+	from *fakeScanner
+}
+
+func (f *fakeScannerCloned) ReSync() {
+	*f.from = f.fakeScanner
+}
+
+func (f *fakeScannerCloned) IsLinkedTo(s scan.Scanner) bool {
+	return f.from == s
+}
+
 func (f *fakeScanner) Scan() bool {
 	f.curr++
 	return f.curr.Int() >= len(f.tokens)
@@ -173,7 +186,10 @@ func (f *fakeScanner) Prev(offset int) scan.TokenInfo {
 }
 
 func (f *fakeScanner) Clone() scan.SharedScanner {
-	panic("implement me")
+	return &fakeScannerCloned{
+		fakeScanner: *f,
+		from:        f,
+	}
 }
 
 func (f *fakeScanner) IsEnded() bool {
