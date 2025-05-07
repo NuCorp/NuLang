@@ -88,7 +88,7 @@ func NewFileParser() FileParser {
 	return fileParser{
 		dotIdent: dotIdentParser{},
 		imports:  NewImport(),
-		defs:     NewDefParser(topLevelDef),
+		defs:     NewDefParser(),
 	}
 }
 

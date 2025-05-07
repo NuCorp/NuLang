@@ -23,6 +23,10 @@ func (t typeParser) Parse(s scan.Scanner, errors *Errors) ast.Type {
 	return nil
 }
 
+func (t typeParser) TryParse(s scan.SharedScanner, errors *Errors) (ast.Type, bool) {
+	return nil, false
+}
+
 type structTypeParser struct {
 	typedef    bool
 	typeParser ParserOf[ast.Type]
@@ -168,4 +172,30 @@ type typeDefParser struct {
 
 func (t typeDefParser) Parse(s scan.Scanner, errors *Errors) ast.TypeDef {
 	return ast.TypeDef{}
+}
+
+type funcTypeParser struct {
+	inFuncDef bool
+	typ       TryParserOf[ast.Type]
+	arg       ParserOf[ast.Argument]
+}
+
+func (f funcTypeParser) Parse(s scan.Scanner, errors *Errors) ast.FuncType {
+	if f.inFuncDef {
+		assert(s.CurrentToken() == tokens.OPAREN, "expect `(` to be called")
+	} else {
+		assert(s.ConsumeToken() == tokens.FUNC, "expect `func` to be called")
+	}
+
+	funcType := ast.FuncType{
+		Arguments: listOf[parenthesesSurrounding, ast.Argument]{
+			parser: f.arg,
+		}.Parse(s, errors),
+	}
+
+	if returnType, ok := f.typ.TryParse(s.Clone(), errors); ok {
+		funcType.ReturnType = returnType
+	}
+
+	return funcType
 }
