@@ -27,10 +27,42 @@ type ParserOf[T any] interface {
 	Parse(scanner scan.Scanner, errors *Errors) T
 }
 
+type TryParserOf[T any] interface {
+	TryParse(scanner scan.SharedScanner, errors *Errors) (T, bool)
+}
+
 type parserFuncFor[T any] func(scanner scan.Scanner, errors *Errors) T
 
 func (p parserFuncFor[T]) Parse(scanner scan.Scanner, errors *Errors) T {
 	return p(scanner, errors)
+}
+
+type tryParserFuncFor[T any] func(scanner scan.SharedScanner, errors *Errors) (T, bool)
+
+func (t tryParserFuncFor[T]) TryParse(scanner scan.SharedScanner, errors *Errors) (T, bool) {
+	return t(scanner, errors)
+}
+
+func TryParser[T any](p ParserOf[T]) TryParserOf[T] {
+	return tryParserFuncFor[T](func(scanner scan.SharedScanner, errors *Errors) (T, bool) {
+		defer scanner.ReSync()
+		return p.Parse(scanner, errors), true
+	})
+}
+
+func MustParser[T any](t TryParserOf[T]) ParserOf[T] {
+	return parserFuncFor[T](func(scanner scan.Scanner, errors *Errors) T {
+		clone := scanner.Clone()
+		defer clone.ReSync()
+
+		ret, ok := t.TryParse(clone, errors)
+
+		if !ok {
+			panic("try parser must not fail")
+		}
+
+		return ret
+	})
 }
 
 type Continuer[F, T any] interface {
