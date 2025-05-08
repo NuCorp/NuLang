@@ -11,6 +11,8 @@ import (
 
 type typeParser struct {
 	structType ParserOf[ast.StructType]
+	funcType   ParserOf[ast.FuncType]
+	dotIdent   ParserOf[ast.NamedType]
 }
 
 func NewTypeParser(inTypedef bool) ParserOf[ast.Type] {
@@ -20,10 +22,44 @@ func NewTypeParser(inTypedef bool) ParserOf[ast.Type] {
 }
 
 func (t typeParser) Parse(s scan.Scanner, errors *Errors) ast.Type {
-	return nil
+	return MustParser[ast.Type](t).Parse(s, errors)
 }
 
-func (t typeParser) TryParse(s scan.SharedScanner, errors *Errors) (ast.Type, bool) {
+func (t typeParser) TryParse(s scan.SharedScanner, errors *Errors) (typ ast.Type, ok bool) {
+	defer func() {
+		if ok {
+			s.ReSync()
+		}
+	}()
+
+	switch s.CurrentToken() {
+	case tokens.OBRAC:
+		if s.Next(1).Token() != tokens.OBRAC {
+			return nil, false
+		}
+		fallthrough
+	case tokens.STRUCT:
+		return t.structType.Parse(s, errors), true
+	case tokens.INTERFACE:
+		// interface
+	case tokens.ENUM, tokens.LOR:
+		// enum type
+	case tokens.FUNC:
+		return t.funcType.Parse(s, errors), true
+	case tokens.OBRAK:
+		// array or dict
+	case tokens.OPAREN:
+		// tuple
+	case tokens.IDENT:
+		return t.dotIdent.Parse(s, errors), true
+	case tokens.STAR:
+		// ptr
+	case tokens.REF:
+		// ref
+	default:
+		return nil, false
+	}
+
 	return nil, false
 }
 
