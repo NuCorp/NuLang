@@ -94,6 +94,37 @@ func Test_funcTypeParser_Parse(t *testing.T) {
 			wantFuncType: ast.FuncType{},
 			wantErrors:   Errors{},
 		},
+		{
+			name: "one arg lambda type no return",
+			scanner: &fakeScanner{
+				tokens: []fakeScannerElem{
+					token("func"), token("("), ident("a"), ident("int"), token(")"),
+				},
+			},
+			typeParser: tryParserFuncFor[ast.Type](func(_ scan.SharedScanner, _ *Errors) (ast.Type, bool) {
+				return nil, false
+			}),
+			argParser: &fakeParserOf[ast.Argument]{
+				Results: []ast.Argument{
+					{
+						Name: "a",
+						Type: ast.NamedType{"int"},
+					},
+				},
+				Skip: []int{
+					2,
+				},
+			},
+			wantFuncType: ast.FuncType{
+				Arguments: []ast.Argument{
+					{
+						Name: "a",
+						Type: ast.NamedType{"int"},
+					},
+				},
+			},
+			wantErrors: Errors{},
+		},
 	}
 
 	for _, tt := range testcases {
