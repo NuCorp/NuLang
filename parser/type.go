@@ -210,6 +210,86 @@ func (t typeDefParser) Parse(s scan.Scanner, errors *Errors) ast.TypeDef {
 	return ast.TypeDef{}
 }
 
+type argDefParser struct {
+	typ  ParserOf[ast.Type]
+	expr ParserOf[ast.Expr]
+
+	variadic      bool
+	namedVariadic bool
+}
+
+func (a *argDefParser) skip(s scan.Scanner) {
+	skipTo(s, tokens.NL, tokens.CPAREN, tokens.COMMA)
+}
+
+func (a *argDefParser) Parse(s scan.Scanner, errors *Errors) ast.Argument {
+	/*
+		| opt(*) IDENT opt(Type opt(= Expr))
+		| opt(*) IDENT opt(*)...Type
+	*/
+	if a.namedVariadic {
+		errors.Set(s.CurrentPos(), "can't have other argument after a named variadic one")
+	}
+
+	var arg ast.Argument
+
+	switch s.CurrentToken() {
+	case tokens.STAR:
+		arg.IsNamed = true
+
+		s.ConsumeTokenInfo()
+
+		if s.CurrentToken() != tokens.IDENT {
+			errors.Set(s.CurrentPos(), "expected identifier")
+			return arg
+		}
+
+		fallthrough
+	case tokens.IDENT:
+		if a.variadic && !arg.IsNamed {
+			errors.Set(s.CurrentPos(), "argument must be named after a variadic")
+		}
+
+		arg.Name = s.ConsumeTokenInfo().Value().(string)
+	default:
+		errors.Set(s.CurrentPos(), "expected identifier or `*`")
+		a.skip(s)
+		return ast.Argument{}
+	}
+
+	switch s.CurrentToken() {
+	case tokens.STAR:
+		if s.Next(1).Token() != tokens.ELLIPSIS {
+			errors.Set(s.CurrentPos(), "expected ellipsis")
+			a.skip(s)
+			return arg
+		}
+
+		a.namedVariadic = true
+
+		s.ConsumeTokenInfo()
+
+		fallthrough
+	case tokens.ELLIPSIS:
+		a.variadic = true
+
+		arg.IsVariadic = true
+		s.ConsumeTokenInfo()
+		return arg
+	case tokens.COMMA, tokens.NL, tokens.CPAREN:
+		return arg
+	default:
+	}
+
+	arg.Type = a.typ.Parse(s, errors)
+
+	if s.CurrentToken() == tokens.ASSIGN {
+		arg.DefaultValue = a.expr.Parse(s, errors)
+	}
+
+	return arg
+}
+
 type funcTypeParser struct {
 	inFuncDef bool
 	typ       TryParserOf[ast.Type]
@@ -223,10 +303,26 @@ func (f funcTypeParser) Parse(s scan.Scanner, errors *Errors) ast.FuncType {
 		assert(s.ConsumeToken() == tokens.FUNC, "expect `func` to be called")
 	}
 
+	args := listOf[parenthesesSurrounding, ast.Argument]{
+		parser: f.arg,
+	}.Parse(s, errors)
+
+	prev := 0
+
+	for i, arg := range args {
+		if arg.Type == nil {
+			continue
+		}
+
+		for j := range i - prev {
+			args[prev+j].Type = args[i].Type
+		}
+
+		prev = i
+	}
+
 	funcType := ast.FuncType{
-		Arguments: listOf[parenthesesSurrounding, ast.Argument]{
-			parser: f.arg,
-		}.Parse(s, errors),
+		Arguments: args,
 	}
 
 	if returnType, ok := f.typ.TryParse(s.Clone(), errors); ok {

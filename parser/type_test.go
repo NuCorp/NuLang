@@ -143,3 +143,100 @@ func Test_funcTypeParser_Parse(t *testing.T) {
 		})
 	}
 }
+
+func Test_argDefParser_Parse(t *testing.T) {
+	testcases := []struct {
+		name string
+	}{
+		{},
+	}
+
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			panic("implement me")
+		})
+	}
+}
+
+func Test_listOfArgDef(t *testing.T) {
+	testcases := []struct {
+		name       string
+		scanner    *fakeScanner
+		typeParser ParserOf[ast.Type]
+		exprParser ParserOf[ast.Expr]
+		wantArgs   []ast.Argument
+		wantErrs   Errors
+	}{
+		{
+			name: "simple one arg",
+			scanner: &fakeScanner{
+				tokens: []fakeScannerElem{
+					token("("),
+					ident("a"), ident("int"),
+					token(")"),
+				},
+			},
+			typeParser: parserFuncFor[ast.Type](func(s scan.Scanner, errors *Errors) ast.Type {
+				s.ConsumeTokenInfo()
+				return ast.NamedType{"int"}
+			}),
+			wantArgs: []ast.Argument{
+				{
+					Name: "a",
+					Type: ast.NamedType{"int"},
+				},
+			},
+			wantErrs: Errors{},
+		},
+		{
+			name: "multiple args multiple lines",
+			scanner: &fakeScanner{
+				tokens: []fakeScannerElem{
+					token("("),
+					ident("a"), ident("int"), token(","), token("\n"),
+					ident("b"), token(","), ident("c"), ident("int"),
+					token(")"),
+					/*
+						(a int,
+						b, c int)
+					*/
+				},
+			},
+			typeParser: parserFuncFor[ast.Type](func(s scan.Scanner, errors *Errors) ast.Type {
+				s.ConsumeTokenInfo()
+				return ast.NamedType{"int"}
+			}),
+			wantArgs: []ast.Argument{
+				{
+					Name: "a",
+					Type: ast.NamedType{"int"},
+				},
+				{
+					Name: "b",
+				},
+				{
+					Name: "c",
+					Type: ast.NamedType{"int"},
+				},
+			},
+			wantErrs: Errors{},
+		},
+	}
+
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			var (
+				errors = Errors{}
+				got    = listOf[parenthesesSurrounding, ast.Argument]{
+					parser: &argDefParser{
+						typ:  tt.typeParser,
+						expr: tt.exprParser,
+					},
+				}.Parse(tt.scanner, &errors)
+			)
+
+			tassert.Equal(t, tt.wantArgs, got)
+			tassert.Equal(t, tt.wantErrs, errors)
+		})
+	}
+}
