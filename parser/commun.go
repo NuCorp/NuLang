@@ -44,6 +44,10 @@ func (t tryParserFuncFor[T]) TryParse(scanner scan.SharedScanner, errors *Errors
 }
 
 func TryParser[T any](p ParserOf[T]) TryParserOf[T] {
+	if t, ok := p.(TryParserOf[T]); ok {
+		return t
+	}
+
 	return tryParserFuncFor[T](func(scanner scan.SharedScanner, errors *Errors) (T, bool) {
 		defer scanner.ReSync()
 		return p.Parse(scanner, errors), true
