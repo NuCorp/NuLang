@@ -51,6 +51,22 @@ type functionCallParser struct {
 	args listOf[parenthesesSurrounding, ast.ArgElem]
 }
 
+func NewFunctionCallContinuer() Continuer[ast.CallableFunc, ast.FuncCall] {
+	expr := ParserOf[ast.Expr](nil) // TODO: NewExprParser()
+
+	return functionCallParser{
+		args: listOf[parenthesesSurrounding, ast.ArgElem]{
+			parser: argParser{
+				ordered: orderedArgParser{expr: expr},
+				named: namedArgParser{
+					expr:  expr,
+					ident: dotIdentParser{self: false},
+				},
+			},
+		},
+	}
+}
+
 func (f functionCallParser) ContinueParsing(from ast.CallableFunc, s scan.Scanner, errors *Errors) ast.FuncCall {
 	assert(s.CurrentToken() == tokens.OPAREN)
 
@@ -65,6 +81,14 @@ type functionDefParser struct {
 	isLambda bool
 	header   ParserOf[ast.FuncType]
 	body     ParserOf[ast.Scope]
+}
+
+func NewFunctionDefParser(isLambda bool) ParserOf[ast.FuncDef] {
+	return functionDefParser{
+		header:   NewFuncTypeParser(!isLambda),
+		body:     nil,
+		isLambda: isLambda,
+	}
 }
 
 func (f functionDefParser) Parse(s scan.Scanner, errors *Errors) ast.FuncDef {

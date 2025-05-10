@@ -296,6 +296,19 @@ type funcTypeParser struct {
 	arg       ParserOf[ast.Argument]
 }
 
+func NewFuncTypeParser(funcDef bool) ParserOf[ast.FuncType] {
+	typ := NewTypeParser(false)
+
+	return funcTypeParser{
+		inFuncDef: funcDef,
+		typ:       TryParser(typ),
+		arg: &argDefParser{
+			typ:  typ,
+			expr: nil, // TODO: NewExprParser(funcDef)
+		},
+	}
+}
+
 func (f funcTypeParser) Parse(s scan.Scanner, errors *Errors) ast.FuncType {
 	if f.inFuncDef {
 		assert(s.CurrentToken() == tokens.OPAREN, "expect `(` to be called")
