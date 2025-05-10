@@ -15,8 +15,8 @@ type orderedArgParser struct {
 	expr ParserOf[ast.Expr]
 }
 
-func (o orderedArgParser) Parse(s scan.Scanner, errors *Errors) ast.ArgElem {
-	return ast.ArgElem{}
+func (o orderedArgParser) Parse(s scan.Scanner, errors *Errors) *ast.OrderedArgElem {
+	return &ast.OrderedArgElem{}
 }
 
 type namedArgParser struct {
@@ -24,8 +24,8 @@ type namedArgParser struct {
 	ident ParserOf[ast.DotIdent]
 }
 
-func (n namedArgParser) Parse(s scan.Scanner, errors *Errors) ast.NamedContainedElem {
-	return ast.NamedContainedElem{}
+func (n namedArgParser) Parse(s scan.Scanner, errors *Errors) *ast.NamedContainedElem {
+	return &ast.NamedContainedElem{}
 }
 
 func (a argParser) Parse(s scan.Scanner, errors *Errors) ast.ArgElem {
