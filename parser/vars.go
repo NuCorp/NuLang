@@ -66,7 +66,7 @@ func (p groupedVar) Parse(s scan.Scanner, errors *Errors) []ast.Var {
 
 		ignore(s, tokens.NL)
 
-		if s.CurrentToken() == tokens.OPAREN {
+		if s.CurrentToken() == tokens.OPAREN { // not handling the binding here
 			if lastTyped < len(vars) {
 				errors.Set(s.CurrentPos(), fmt.Sprintf("missing type for %d variable", len(vars)-lastTyped))
 			}
@@ -86,15 +86,23 @@ func (p groupedVar) Parse(s scan.Scanner, errors *Errors) []ast.Var {
 			break
 		}
 
+		// var ident
+
 		currentVar.Name = s.ConsumeTokenInfo().RawString()
 
-		if s.CurrentToken() == tokens.COMMA {
+		if s.CurrentToken() == tokens.COMMA { // possibly: var ident, ident, ...
 			vars = append(vars, currentVar)
 			s.ConsumeTokenInfo()
+
 			continue
 		}
 
+		canAssign := lastTyped < len(vars)
+
 		if s.CurrentToken() != tokens.ASSIGN { // then it must be a type
+			// var ident, ident, ..., ident Type
+			// or
+			// var ident Type
 			currentVar.Type = p.typeParser.Parse(s, errors)
 
 			for ; lastTyped < len(vars); lastTyped++ {
@@ -102,7 +110,7 @@ func (p groupedVar) Parse(s scan.Scanner, errors *Errors) []ast.Var {
 			}
 		}
 
-		if s.CurrentToken() == tokens.ASSIGN && lastTyped < len(vars) {
+		if s.CurrentToken() == tokens.ASSIGN && !canAssign {
 			errors.Set(s.CurrentPos(), "can't assign value to multiple variable typing")
 		}
 
