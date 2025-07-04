@@ -76,9 +76,11 @@ func (c *common[T]) CurrentTokenInfo() TokenInfo {
 		last.from = last.to
 		return last
 	}
+
 	if c.current >= len(c.tokens) {
 		c.ended = c.scanner.Scan()
 	}
+
 	return c.tokens[c.current]
 }
 func (c *common[T]) CurrentToken() tokens.Token {
@@ -93,6 +95,7 @@ func (c *common[T]) ConsumeTokenInfo() TokenInfo {
 			c.current++
 		}
 	}()
+
 	return c.CurrentTokenInfo()
 }
 func (c *common[T]) ConsumeToken() tokens.Token {
@@ -253,21 +256,34 @@ type Tokenizer interface {
 }
 
 func innerTokenizing(inputLines <-chan string, output chan<- CodeToken) CodeToken {
-	pos := InteractiveTokenPos().tokenPos()
-	tokenCode := CodeToken{}
+	var (
+		pos       = InteractiveTokenPos().tokenPos()
+		tokenizer = Tokenizer(nil)
 
-	tokenizer := Tokenizer(nil)
-	var lines []string
-	for line := range inputLines {
-		lines = append(lines, line)
-		for pos.line < len(lines) {
-			line := []rune(lines[pos.line] + "\n")
-			if pos.tokenPos().col >= len(line) {
+		tokenCode CodeToken
+		lines     int
+	)
+	/*
+		var pos = InteractiveTokenPos().tokenPos,
+			tokenizer Tokenizer?,
+			tokenCode CodeToken,
+			lines int
+	*/
+
+	for line := range inputLines { // for line in inputLines {
+		lines++
+
+		for pos.line < lines { // while pos.line < lines {
+			line := []rune(line)
+
+			if pos.col >= len(line) { // if pos.col >= line.length {
 				pos.line++
 				pos.col = 0
 				continue
 			}
+
 			r := line[pos.col]
+
 			if tokenizer == nil {
 				tokenizer = getScannerFor(r)
 				if err, isErr := tokenizer.(error); isErr {
@@ -367,9 +383,11 @@ func getScannerFor(r rune) Tokenizer {
 	if unicode.IsDigit(r) {
 		return new(tokenizeInt)
 	}
+
 	if unicode.IsLetter(r) || r == '_' {
 		return new(tokenizeText)
 	}
+
 	switch r {
 	case '\'':
 		return new(tokenizeChar)

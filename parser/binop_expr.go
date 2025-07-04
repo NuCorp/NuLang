@@ -4,7 +4,7 @@ import (
 	"github.com/NuCorp/NuLang/parser/ast"
 	"github.com/NuCorp/NuLang/scan"
 	"github.com/NuCorp/NuLang/scan/tokens"
-	"github.com/NuCorp/NuLang/utils/maps"
+	"github.com/NuCorp/NuLang/utils/mapsutil"
 )
 
 var currentPrio = 0
@@ -45,7 +45,7 @@ var (
 		tokens.LE:  samePrio(),
 	}
 
-	binaryOperators = maps.Keys(binopPriorities)
+	binaryOperators = mapsutil.Keys(binopPriorities)
 )
 
 func isBinop(t tokens.Token) bool {

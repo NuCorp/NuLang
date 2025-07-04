@@ -2,6 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"math"
+	"strconv"
+	"strings"
+
 	"github.com/NuCorp/NuLang/container"
 )
 
@@ -11,12 +15,15 @@ type Fraction struct {
 }
 
 func GCD(n1, n2 uint) uint {
-	prevQ, Q := n2, n1%n2
+	var (
+		prevQ = n1
+		Q     = n2
+	)
+
 	for Q != 0 {
-		tmp := Q
-		Q = prevQ % Q
-		prevQ = tmp
+		prevQ, Q = Q, prevQ%Q
 	}
+
 	return prevQ
 }
 func (frac *Fraction) reduce() Fraction {
@@ -36,6 +43,76 @@ func (frac *Fraction) reduce() Fraction {
 
 func MakeFraction(num int64, denum uint) Fraction {
 	return (&Fraction{Num: num, Denum: denum}).reduce()
+}
+
+func MakeFractionFromString(str string) (Fraction, error) {
+	var (
+		intSplit = strings.Split(str, ".")
+
+		res Fraction
+	)
+
+	switch len(intSplit) {
+	case 1, 2:
+		intPart, err := strconv.ParseInt(intSplit[0], 10, 64)
+
+		if err != nil {
+			return Fraction{}, fmt.Errorf("invalid fraction: %w", err)
+		}
+
+		res = MakeFraction(intPart, 1)
+
+		if len(intSplit) == 1 {
+			return res, nil
+		}
+	default:
+		return Fraction{}, fmt.Errorf("invalid fraction format")
+	}
+
+	var (
+		repeatSplit = strings.Split(intSplit[1], "(")
+		floatOffset int
+	)
+
+	switch len(repeatSplit) {
+	case 1, 2:
+		floatPart, err := strconv.ParseFloat("0."+repeatSplit[0], 64)
+
+		if err != nil {
+			return Fraction{}, fmt.Errorf("invalid fraction: %w", err)
+		}
+
+		floatOffset = len(repeatSplit[0])
+
+		power := math.Pow(10, float64(floatOffset))
+
+		res = MakeFraction(int64((float64(res.Num)+floatPart)*power), uint(power))
+
+		if len(repeatSplit) == 1 {
+			return res, nil
+		}
+	default:
+		return Fraction{}, fmt.Errorf("invalid fraction format")
+	}
+
+	var (
+		repeatStr   = strings.TrimSuffix(repeatSplit[1], ")")
+		repeat, err = strconv.ParseInt(repeatStr, 10, 64)
+	)
+
+	if err != nil {
+		return Fraction{}, fmt.Errorf("invalid fraction: %w", err)
+	}
+
+	var (
+		log10Repeat = len([]rune(repeatStr))
+
+		repeatFrac = MakeFraction(repeat, uint(math.Pow(10, float64(log10Repeat))-1))
+	)
+
+	return res.Add(
+		repeatFrac.Mult(MakeFraction(1, uint(math.Pow10(floatOffset)))),
+	), nil
 }
 
 func (frac Fraction) String() string {
